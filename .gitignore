@@ -1,0 +1,13 @@
+# Bluesky Block-Entferner - Gitignore
+
+# Test- und Diagnoseskripte (enthalten Zugangsdaten/App-Passwörter)
+test-*.js
+
+# Lokale Node.js-Abhängigkeiten (falls vorhanden)
+node_modules/
+
+# Temporäre Medien- und Browserdaten
+.tempmediaStorage/
+.DS_Store
+Thumbs.db
+*.log
