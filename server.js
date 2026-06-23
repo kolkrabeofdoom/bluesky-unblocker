@@ -16,8 +16,9 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    // Normalise URL path
-    let filePath = req.url === '/' ? '/index.html' : req.url;
+    // Normalise URL path (strip query parameters)
+    const cleanUrl = req.url.split('?')[0];
+    let filePath = cleanUrl === '/' ? '/index.html' : cleanUrl;
     filePath = path.join(__dirname, filePath);
     
     // Safety check: ensure file is within the project directory

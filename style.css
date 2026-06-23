@@ -1153,3 +1153,168 @@ input[type="url"]:focus {
 .filter-checkbox-label {
     font-weight: 500;
 }
+
+/* Feature Updates: Advanced Bundle */
+
+/* Saved Profiles Widget */
+.saved-profiles-container {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+
+.saved-profiles-list {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.saved-profile-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    min-width: 110px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.saved-profile-item:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.saved-profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin-bottom: 6px;
+    border: 1px solid var(--card-border);
+    object-fit: cover;
+}
+
+.saved-profile-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.saved-profile-handle {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.saved-profile-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(239, 68, 68, 0.2);
+    border: none;
+    color: #f87171;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.saved-profile-remove:hover {
+    background: rgba(239, 68, 68, 0.6);
+    color: white;
+}
+
+/* SVG Chart */
+.chart-bar {
+    fill: url(#barGrad);
+    transition: fill 0.3s, height 0.3s, y 0.3s;
+    cursor: pointer;
+}
+
+.chart-bar:hover {
+    fill: #c084fc;
+    filter: drop-shadow(0px 0px 6px rgba(192, 132, 252, 0.6));
+}
+
+.chart-tooltip {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.chart-axis-line {
+    stroke: var(--card-border);
+    stroke-width: 1;
+}
+
+.chart-grid-line {
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.chart-label {
+    fill: var(--text-muted);
+    font-size: 9px;
+    font-family: var(--font-sans);
+}
+
+/* Whitelist Shield Toggle & Badge */
+.btn-whitelist-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.btn-whitelist-toggle:hover {
+    color: var(--primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.btn-whitelist-toggle.active {
+    color: var(--primary);
+}
+
+.block-status-badge.protected {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+    text-shadow: 0 0 8px rgba(96, 165, 250, 0.3);
+}

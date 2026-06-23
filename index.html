@@ -33,6 +33,14 @@
                     Aus Sicherheitsgründen empfehlen wir dringend, ein <strong>App-Passwort</strong> zu verwenden.
                     Du kannst in deinen Bluesky-Einstellungen unter <em>Einstellungen &gt; App-Passwörter</em> ein neues Passwort erstellen.
                 </p>
+
+                <!-- Saved Profiles Widget -->
+                <div id="saved-profiles-container" class="saved-profiles-container hidden">
+                    <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Gespeicherte Profile</h4>
+                    <div id="saved-profiles-list" class="saved-profiles-list">
+                        <!-- Dynamic profile list cards -->
+                    </div>
+                </div>
                 
                 <form id="login-form">
                     <div class="form-group">
@@ -54,6 +62,13 @@
                                 </svg>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="form-group checkbox-form-group" style="margin-top: 15px; margin-bottom: 20px;">
+                        <label class="filter-checkbox-container" style="background: none; border: none; padding: 0; font-size: 0.9rem; justify-content: flex-start; height: auto;">
+                            <input type="checkbox" id="chk-save-profile" checked>
+                            <span class="filter-checkbox-label" style="color: var(--text-secondary);">Profil lokal für Schnellwechsel speichern</span>
+                        </label>
                     </div>
                     
                     <button type="submit" id="btn-login" class="btn btn-primary">
@@ -110,6 +125,19 @@
                                 <span class="switch-slider"></span>
                             </label>
                             <span class="switch-label" title="Aktionen nur simulieren, ohne PDS-Einträge wirklich zu ändern">Simulationsmodus (Dry-Run)</span>
+                        </div>
+
+                        <!-- Block-Analyse Collapsible Panel -->
+                        <div class="analysis-panel-wrapper" style="margin-top: 15px; border-top: 1px solid var(--card-border); padding-top: 15px; margin-bottom: 15px;">
+                            <button type="button" id="btn-toggle-analysis" class="btn btn-small btn-secondary" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;" title="Block-Statistiken über die Zeit anzeigen">
+                                <span>📊 Block-Analyse (Verlauf)</span>
+                                <span id="analysis-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                            </button>
+                            <div id="analysis-content" class="analysis-content hidden" style="margin-top: 15px;">
+                                <div id="chart-container" style="width: 100%; height: 180px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;">
+                                    <div class="info-text-small" style="color: var(--text-muted);">Keine Daten zum Analysieren geladen.</div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Progress Bar -->
@@ -190,6 +218,9 @@
                             <button id="btn-mute-selected" class="btn btn-secondary-action btn-large">
                                 <span>Markierte in Stummschaltung umwandeln</span>
                             </button>
+                            <button id="btn-clean-inactives" class="btn btn-secondary-action btn-large" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; background: rgba(245, 158, 11, 0.1);" title="Alle inaktiven und gelöschten Accounts (z.B. handle.invalid) sofort entblocken">
+                                <span>Inaktive/Gelöschte bereinigen</span>
+                            </button>
                         </div>
                         <div id="action-info" class="info-text-small">
                             Wähle Konten aus der Liste unten aus oder klicke direkt auf "ALLE Blocks aufheben", um deine gesamte Blockliste zu leeren.
@@ -212,6 +243,25 @@
                                     <span>Import Backup</span>
                                 </button>
                                 <input type="file" id="input-import-file" accept=".json" class="hidden">
+                            </div>
+                        </div>
+
+                        <!-- Mute-Listen Werkzeuge -->
+                        <div class="list-tools-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Mute-Listen Werkzeuge</h4>
+                            <div class="list-buttons" style="display: flex; gap: 8px;">
+                                <button id="btn-export-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Markierte Konten als abonnierbare Mute-Liste auf Bluesky veröffentlichen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    <span>Mute-Liste erstellen</span>
+                                </button>
+                                <button id="btn-import-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Profile aus einer Bluesky Liste laden und markieren">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z"/>
+                                    </svg>
+                                    <span>Aus Liste importieren</span>
+                                </button>
                             </div>
                         </div>
                         <div class="warning-box" style="margin-top: 15px; text-align: left;">
