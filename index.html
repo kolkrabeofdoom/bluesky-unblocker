@@ -103,6 +103,15 @@
                             </div>
                         </div>
 
+                        <!-- Dry-Run Simulation Switch -->
+                        <div class="dry-run-wrapper">
+                            <label class="switch-container">
+                                <input type="checkbox" id="chk-dry-run">
+                                <span class="switch-slider"></span>
+                            </label>
+                            <span class="switch-label" title="Aktionen nur simulieren, ohne PDS-Einträge wirklich zu ändern">Simulationsmodus (Dry-Run)</span>
+                        </div>
+
                         <!-- Progress Bar -->
                         <div class="progress-container hidden" id="progress-container">
                             <div class="progress-bar-wrapper">
@@ -140,11 +149,26 @@
                     <div class="card action-card fade-in">
                         <h3>Aktionen</h3>
                         <div class="filter-actions">
-                            <input type="text" id="search-input" placeholder="Nach Name oder Handle filtern...">
+                            <div class="filter-row">
+                                <input type="text" id="search-input" placeholder="Name oder Handle filtern...">
+                            </div>
+                            <div class="filter-options-row">
+                                <select id="select-sort" title="Blockliste sortieren">
+                                    <option value="date-desc" selected>Neueste zuerst</option>
+                                    <option value="date-asc">Älteste zuerst</option>
+                                    <option value="name-asc">Name A-Z</option>
+                                    <option value="name-desc">Name Z-A</option>
+                                </select>
+                                <label class="filter-checkbox-container" title="Nur Profile mit ungültigem Handle (z.B. gelöschte Accounts) anzeigen">
+                                    <input type="checkbox" id="chk-filter-inactive">
+                                    <span class="filter-checkbox-label">Inaktive/Gelöschte</span>
+                                </label>
+                            </div>
                             <div class="selection-buttons">
                                 <button id="btn-select-all" class="btn btn-small btn-secondary" title="Alle Konten markieren">Alle</button>
                                 <button id="btn-select-24h" class="btn btn-small btn-secondary" title="Blocks der letzten 24 Stunden markieren">Letzte 24h</button>
                                 <button id="btn-select-48h" class="btn btn-small btn-secondary" title="Blocks der letzten 48 Stunden markieren">Letzte 48h</button>
+                                <button id="btn-select-phantoms" class="btn btn-small btn-secondary" title="Nur Phantom-Blocks markieren">👻 Phantom-Blocks</button>
                                 <button id="btn-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
                             </div>
                             <div class="custom-time-filter">
@@ -163,9 +187,32 @@
                             <button id="btn-unblock-all" class="btn btn-danger-action btn-large">
                                 <span>ALLE Blocks aufheben</span>
                             </button>
+                            <button id="btn-mute-selected" class="btn btn-secondary-action btn-large">
+                                <span>Markierte in Stummschaltung umwandeln</span>
+                            </button>
                         </div>
                         <div id="action-info" class="info-text-small">
                             Wähle Konten aus der Liste unten aus oder klicke direkt auf "ALLE Blocks aufheben", um deine gesamte Blockliste zu leeren.
+                        </div>
+                        
+                        <!-- Backup & Restore -->
+                        <div class="backup-restore-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Backup & Wiederherstellung</h4>
+                            <div class="backup-buttons" style="display: flex; gap: 8px;">
+                                <button id="btn-export-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste als JSON-Backup herunterladen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                    <span>Export JSON</span>
+                                </button>
+                                <button id="btn-import-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste aus Backup wiederherstellen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                    </svg>
+                                    <span>Import Backup</span>
+                                </button>
+                                <input type="file" id="input-import-file" accept=".json" class="hidden">
+                            </div>
                         </div>
                         <div class="warning-box" style="margin-top: 15px; text-align: left;">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: var(--warning); margin-top: 2px;">

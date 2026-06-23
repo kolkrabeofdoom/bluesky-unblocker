@@ -8,8 +8,12 @@ Ein elegantes, schnelles und sicheres Werkzeug zur Massenentfernung von Blocks a
 
 *   **Vollständige Massenabwicklung:** Entblocke Hunderte oder Tausende von Accounts mit nur einem Klick.
 *   **Intelligente Filter & Zeitfenster:** Filtere deine Blockliste nach Erstellungsdatum. Neben den Standard-Optionen (Letzte 24h, Letzte 48h) kannst du einen **frei definierbaren Zeitraum** (in Stunden oder Tagen) angeben, um gezielt Blocks aus der Vergangenheit auszuwählen.
+*   **Simulationsmodus (Dry-Run):** Schalte den Simulationsmodus ein, um Aktionen vorab risikofrei zu testen. Die Queue wird mit künstlichem Delay durchlaufen und im Protokoll protokolliert, ohne echte Schreibzugriffe an deinen PDS zu senden.
+*   **Blocklisten Backup & Wiederherstellung:** Exportiere deine gesamte Blockliste als strukturiertes JSON-Backup. Lade Backups hoch, um fehlende Blocks direkt wiederherzustellen (automatische Block-Wiedererstellung).
+*   **Block in Stummschaltung umwandeln (Block-to-Mute):** Konvertiere Blocks direkt in Stummschaltungen. Die ausgewählten Accounts werden zuerst stummgeschaltet (`muteActor`) und danach sicher entblockt (PDS-Repository-Alignment).
+*   **Erweiterte Sortierung & Handle-Filter:** Sortiere Profile chronologisch (neueste/älteste zuerst) oder alphabetisch (A-Z/Z-A). Filtere inaktive, gelöschte oder ungültige Accounts (z. B. mit dem Handle `handle.invalid`) mit einem Klick heraus.
 *   **Sicherer Worker-Queue:** Arbeitet mit kontrollierter Nebenläufigkeit (Concurrency) und automatischem Rate-Limit-Handling, um PDS-Überlastungen zu vermeiden.
-*   **Behebung von Phantom-Blocks:** Erkennt Diskrepanzen zwischen dem Bluesky AppView-Index und der physischen PDS-Datenbank und behebt diese automatisch (siehe [Phantom-Blocks-Erklärung](#-das-phantom-block-problem)).
+*   **Behebung von Phantom-Blocks:** Erkennt Diskrepanzen zwischen dem Bluesky AppView-Index und der physischen PDS-Datenbank, markiert sie mit einem auffälligen Ghost-Icon (👻 Phantom) und behebt diese automatisch (siehe [Phantom-Blocks-Erklärung](#-das-phantom-block-problem)).
 *   **Umfangreiches Live-Logging:** Detaillierte Fehlerberichte, Erfolgsmeldungen und Echtzeit-Statistiken während der Ausführung.
 *   **Steuerungselemente & Echtzeit-Rescan:** Jederzeit pausieren, fortsetzen oder abbrechen. Nach Abschluss der Massenentfernung kannst du die Blockliste mit einem Klick neu scannen und final verifizieren.
 *   **Modernes Design:** Premium Darkmode-Layout mit flüssigen Animationen und Responsive Webdesign (für Desktop, Tablet und Smartphones).

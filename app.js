@@ -13,7 +13,9 @@ const state = {
         selected: 0,
         success: 0,
         error: 0
-    }
+    },
+    isDryRun: false,
+    activeWorker: null
 };
 
 // UI Elements
@@ -47,19 +49,28 @@ const DOM = {
     btnCancel: document.getElementById('btn-cancel'),
     finishedControls: document.getElementById('finished-controls'),
     btnRescanFinished: document.getElementById('btn-rescan-finished'),
+    chkDryRun: document.getElementById('chk-dry-run'),
     
     searchInput: document.getElementById('search-input'),
+    selectSort: document.getElementById('select-sort'),
+    chkFilterInactive: document.getElementById('chk-filter-inactive'),
     btnSelectAll: document.getElementById('btn-select-all'),
     btnSelect24h: document.getElementById('btn-select-24h'),
     btnSelect48h: document.getElementById('btn-select-48h'),
+    btnSelectPhantoms: document.getElementById('btn-select-phantoms'),
     inputCustomTime: document.getElementById('input-custom-time'),
     selectCustomUnit: document.getElementById('select-custom-unit'),
     btnSelectCustom: document.getElementById('btn-select-custom'),
     btnDeselectAll: document.getElementById('btn-deselect-all'),
     btnUnblockSelected: document.getElementById('btn-unblock-selected'),
     btnUnblockAll: document.getElementById('btn-unblock-all'),
+    btnMuteSelected: document.getElementById('btn-mute-selected'),
     visibleCountBadge: document.getElementById('visible-count-badge'),
     btnRescan: document.getElementById('btn-rescan'),
+    
+    btnExportJson: document.getElementById('btn-export-json'),
+    btnImportJson: document.getElementById('btn-import-json'),
+    inputImportFile: document.getElementById('input-import-file'),
     
     loadingBlocks: document.getElementById('loading-blocks'),
     loadingCursorText: document.getElementById('loading-cursor-text'),
@@ -181,12 +192,42 @@ function updateStats() {
 // Render the block list grid
 function renderBlocklist() {
     const query = DOM.searchInput.value.toLowerCase().trim();
+    const showOnlyInactive = DOM.chkFilterInactive.checked;
     DOM.blockListGrid.innerHTML = '';
     
     const filtered = state.blockedUsers.filter(user => {
         const handleMatch = user.handle.toLowerCase().includes(query);
         const nameMatch = (user.displayName || '').toLowerCase().includes(query);
-        return handleMatch || nameMatch;
+        if (!(handleMatch || nameMatch)) return false;
+        
+        if (showOnlyInactive) {
+            const isInvalid = user.handle === 'handle.invalid' || !user.displayName || user.handle.toLowerCase().includes('invalid');
+            return isInvalid;
+        }
+        return true;
+    });
+    
+    // Sort blocklist
+    const sortVal = DOM.selectSort.value;
+    filtered.sort((a, b) => {
+        if (sortVal === 'date-desc') {
+            const dateA = a.indexedAt ? new Date(a.indexedAt) : new Date(0);
+            const dateB = b.indexedAt ? new Date(b.indexedAt) : new Date(0);
+            return dateB - dateA;
+        } else if (sortVal === 'date-asc') {
+            const dateA = a.indexedAt ? new Date(a.indexedAt) : new Date(0);
+            const dateB = b.indexedAt ? new Date(b.indexedAt) : new Date(0);
+            return dateA - dateB;
+        } else if (sortVal === 'name-asc') {
+            const nameA = (a.displayName || a.handle).toLowerCase();
+            const nameB = (b.displayName || b.handle).toLowerCase();
+            return nameA.localeCompare(nameB);
+        } else if (sortVal === 'name-desc') {
+            const nameA = (a.displayName || a.handle).toLowerCase();
+            const nameB = (b.displayName || b.handle).toLowerCase();
+            return nameB.localeCompare(nameA);
+        }
+        return 0;
     });
     
     DOM.visibleCountBadge.textContent = `${filtered.length} von ${state.blockedUsers.length} geladen`;
@@ -209,8 +250,9 @@ function renderBlocklist() {
     DOM.blockListGrid.classList.remove('hidden');
     
     filtered.forEach(user => {
+        const isPhantom = !state.repoRkeys.has(user.rkey);
         const card = document.createElement('div');
-        card.className = `block-item fade-in ${user.status}`;
+        card.className = `block-item fade-in ${user.status} ${isPhantom ? 'phantom' : ''}`;
         card.id = `block-card-${user.did.replace(':', '_')}`;
         
         // Disable checkbox if already unblocked or currently unblocking
@@ -218,9 +260,14 @@ function renderBlocklist() {
         const disabledAttr = isInteractive ? '' : 'disabled';
         
         let statusLabel = 'Blockiert';
+        let badgeClass = 'block-status-badge';
         if (user.status === 'processing') statusLabel = 'Löst...';
         if (user.status === 'unblocked') statusLabel = 'Entfernt';
         if (user.status === 'error') statusLabel = 'Fehler';
+        if (user.status === 'blocked' && isPhantom) {
+            statusLabel = '👻 Phantom';
+            badgeClass = 'block-status-badge phantom';
+        }
         
         const avatarSrc = user.avatar || '';
         const avatarEl = avatarSrc 
@@ -248,7 +295,7 @@ function renderBlocklist() {
                 </div>
                 <div class="block-date" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Blockiert am ${blockDate}</div>
             </div>
-            <span class="block-status-badge">${statusLabel}</span>
+            <span class="${badgeClass}">${statusLabel}</span>
         `;
         
         // Event listener for checkbox
@@ -269,14 +316,21 @@ function setActionButtonsDisabled(disabled) {
     DOM.btnSelectAll.disabled = disabled;
     DOM.btnSelect24h.disabled = disabled;
     DOM.btnSelect48h.disabled = disabled;
+    DOM.btnSelectPhantoms.disabled = disabled;
     DOM.btnSelectCustom.disabled = disabled;
     DOM.inputCustomTime.disabled = disabled;
     DOM.selectCustomUnit.disabled = disabled;
     DOM.btnDeselectAll.disabled = disabled;
     DOM.btnUnblockSelected.disabled = disabled;
     DOM.btnUnblockAll.disabled = disabled;
+    DOM.btnMuteSelected.disabled = disabled;
     DOM.searchInput.disabled = disabled;
+    DOM.selectSort.disabled = disabled;
+    DOM.chkFilterInactive.disabled = disabled;
     DOM.btnRescan.disabled = disabled;
+    DOM.btnExportJson.disabled = disabled;
+    DOM.btnImportJson.disabled = disabled;
+    DOM.chkDryRun.disabled = disabled;
     
     // Also disable individual checkboxes in DOM
     const checkboxes = DOM.blockListGrid.querySelectorAll('input[type="checkbox"]');
@@ -496,6 +550,23 @@ DOM.searchInput.addEventListener('input', () => {
     renderBlocklist();
 });
 
+DOM.selectSort.addEventListener('change', () => {
+    renderBlocklist();
+});
+
+DOM.chkFilterInactive.addEventListener('change', () => {
+    renderBlocklist();
+});
+
+DOM.chkDryRun.addEventListener('change', () => {
+    state.isDryRun = DOM.chkDryRun.checked;
+    if (state.isDryRun) {
+        log('Simulationsmodus (Dry-Run) aktiviert. Schreibzugriffe werden nur simuliert.', 'warning');
+    } else {
+        log('Simulationsmodus deaktiviert. Aktionen werden direkt ausgeführt.', 'info');
+    }
+});
+
 DOM.btnSelectAll.addEventListener('click', () => {
     // Select all visible (filtered) accounts
     const query = DOM.searchInput.value.toLowerCase().trim();
@@ -515,6 +586,21 @@ DOM.btnSelectAll.addEventListener('click', () => {
 
 DOM.btnSelect24h.addEventListener('click', () => selectBlocksByTimeframe(24));
 DOM.btnSelect48h.addEventListener('click', () => selectBlocksByTimeframe(48));
+DOM.btnSelectPhantoms.addEventListener('click', () => {
+    let count = 0;
+    state.blockedUsers.forEach(user => {
+        const isPhantom = !state.repoRkeys.has(user.rkey);
+        if (user.status === 'blocked' && isPhantom) {
+            user.selected = true;
+            count++;
+        } else {
+            user.selected = false;
+        }
+    });
+    updateStats();
+    renderBlocklist();
+    log(`Es wurden ${count} Phantom-Blocks ausgewählt.`, 'info');
+});
 DOM.btnSelectCustom.addEventListener('click', () => {
     const value = parseInt(DOM.inputCustomTime.value, 10);
     const unit = DOM.selectCustomUnit.value;
@@ -589,12 +675,170 @@ DOM.btnUnblockAll.addEventListener('click', () => {
     }
 });
 
+DOM.btnMuteSelected.addEventListener('click', () => {
+    const listToMute = state.blockedUsers.filter(u => u.selected && u.status !== 'unblocked');
+    if (listToMute.length === 0) {
+        alert('Bitte wähle mindestens ein Konto aus der Liste aus!');
+        return;
+    }
+    
+    const confirmMessage = `Möchtest du die ${listToMute.length} ausgewählten Accounts stummschalten und gleichzeitig entblocken?`;
+    if (confirm(confirmMessage)) {
+        startMutingFlow(listToMute);
+    }
+});
+
+// Start the muting flow (convert blocks to mute)
+function startMutingFlow(users) {
+    state.queue = users.map(u => u.did);
+    state.runTotal = users.length;
+    state.isProcessing = true;
+    state.isPaused = false;
+    state.activeWorker = processMuteQueue;
+    
+    // UI state adjustments
+    setActionButtonsDisabled(true);
+    DOM.progressContainer.classList.remove('hidden');
+    DOM.executionControls.classList.remove('hidden');
+    DOM.finishedControls.classList.add('hidden');
+    DOM.btnPause.classList.remove('hidden');
+    DOM.btnResume.classList.add('hidden');
+    DOM.btnCancel.disabled = false;
+    
+    log(`Starte die Umwandlung von ${state.queue.length} Blocks in Stummschaltung...`, 'system');
+    updateStats();
+    renderBlocklist();
+    
+    state.abortController = new AbortController();
+    
+    // Start processing queue with muting worker
+    processMuteQueue();
+}
+
+async function processMuteQueue() {
+    const CONCURRENCY = 4;
+    const THROTTLE_DELAY = 100;
+    const workers = [];
+    
+    const worker = async () => {
+        while (state.queue.length > 0 && state.isProcessing && !state.isPaused) {
+            const currentDid = state.queue.shift();
+            if (!currentDid) continue;
+            
+            const user = state.blockedUsers.find(u => u.did === currentDid);
+            if (!user) continue;
+            
+            user.status = 'processing';
+            updateUserCardUI(user);
+            updateStats();
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY));
+                
+                if (!state.isProcessing || state.isPaused) {
+                    state.queue.unshift(currentDid);
+                    user.status = 'blocked';
+                    updateUserCardUI(user);
+                    updateStats();
+                    break;
+                }
+                
+                if (state.isDryRun) {
+                    log(`[Dry-Run] Würde @${user.handle} stummschalten und Block aufheben.`, 'success');
+                    user.status = 'unblocked';
+                    user.selected = false;
+                } else {
+                    // 1. Mute actor
+                    log(`Mute @${user.handle}...`, 'info');
+                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.graph.muteActor`, {
+                        method: 'POST',
+                        body: JSON.stringify({ actor: currentDid })
+                    });
+                    
+                    // 2. Unblock (check if phantom first)
+                    const isPhantom = !state.repoRkeys.has(user.rkey);
+                    if (isPhantom) {
+                        log(`Phantom-Block für @${user.handle} wird materialisiert...`, 'info');
+                        await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.putRecord`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                repo: state.session.did,
+                                collection: 'app.bsky.graph.block',
+                                rkey: user.rkey,
+                                record: {
+                                    $type: 'app.bsky.graph.block',
+                                    subject: user.did,
+                                    createdAt: new Date().toISOString()
+                                }
+                            })
+                        });
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Delete the block record from repo
+                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            repo: state.session.did,
+                            collection: 'app.bsky.graph.block',
+                            rkey: user.rkey
+                        })
+                    });
+                    
+                    // Verification
+                    let isDeleted = false;
+                    const MAX_RETRIES = 3;
+                    for (let retry = 1; retry <= MAX_RETRIES; retry++) {
+                        await new Promise(resolve => setTimeout(resolve, retry * 250));
+                        try {
+                            await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.getRecord?repo=${state.session.did}&collection=app.bsky.graph.block&rkey=${user.rkey}`);
+                            isDeleted = false;
+                        } catch (getErr) {
+                            const errStr = getErr.message.toLowerCase();
+                            if (errStr.includes('not found') || errStr.includes('could not locate') || errStr.includes('fehler 400') || errStr.includes('fehler 404') || errStr.includes('does not exist')) {
+                                isDeleted = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!isDeleted) {
+                        throw new Error('Verifizierung fehlgeschlagen: Block existiert weiterhin.');
+                    }
+                    
+                    user.status = 'unblocked';
+                    user.selected = false;
+                    log(`Erfolgreich stummgeschaltet und Block aufgehoben: @${user.handle}`, 'success');
+                }
+            } catch (err) {
+                user.status = 'error';
+                log(`Fehler bei @${user.handle} (Mute/Unblock): ${getErrorMessage(err)}`, 'error');
+            }
+            
+            updateUserCardUI(user);
+            updateStats();
+        }
+    };
+    
+    for (let i = 0; i < Math.min(CONCURRENCY, state.queue.length); i++) {
+        workers.push(worker());
+    }
+    
+    await Promise.all(workers);
+    
+    if (state.queue.length === 0 && state.isProcessing && !state.isPaused) {
+        log('Umwandlung in Stummschaltung abgeschlossen!', 'success');
+        finishUnblockingFlow();
+    }
+}
+
 // Start the unblocking flow
 function startUnblockingFlow(users) {
     state.queue = users.map(u => u.did);
     state.runTotal = users.length;
     state.isProcessing = true;
     state.isPaused = false;
+    state.activeWorker = processQueue;
     
     // UI state adjustments
     setActionButtonsDisabled(true);
@@ -648,70 +892,77 @@ async function processQueue() {
                     break;
                 }
                 
-                // Check if it is a phantom block (exists on AppView/Relay but not in PDS repo)
-                const isPhantom = !state.repoRkeys.has(user.rkey);
-                if (isPhantom) {
-                    log(`Phantom-Block für @${user.handle} wird materialisiert...`, 'info');
-                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.putRecord`, {
+                if (state.isDryRun) {
+                    user.status = 'unblocked';
+                    user.selected = false;
+                    const progressText = `[${state.runTotal - state.queue.length}/${state.runTotal}]`;
+                    log(`[Dry-Run] ${progressText} Würde @${user.handle} entblocken und verifizieren.`, 'success');
+                } else {
+                    // Check if it is a phantom block (exists on AppView/Relay but not in PDS repo)
+                    const isPhantom = !state.repoRkeys.has(user.rkey);
+                    if (isPhantom) {
+                        log(`Phantom-Block für @${user.handle} wird materialisiert...`, 'info');
+                        await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.putRecord`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                repo: state.session.did,
+                                collection: 'app.bsky.graph.block',
+                                rkey: user.rkey,
+                                record: {
+                                    $type: 'app.bsky.graph.block',
+                                    subject: user.did,
+                                    createdAt: new Date().toISOString()
+                                }
+                            })
+                        });
+                        // Wait a moment for PDS db indexing/firehose queuing
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Execute unblock API call
+                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
                         method: 'POST',
                         body: JSON.stringify({
                             repo: state.session.did,
                             collection: 'app.bsky.graph.block',
-                            rkey: user.rkey,
-                            record: {
-                                $type: 'app.bsky.graph.block',
-                                subject: user.did,
-                                createdAt: new Date().toISOString()
-                            }
+                            rkey: user.rkey
                         })
                     });
-                    // Wait a moment for PDS db indexing/firehose queuing
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                }
-                
-                // Execute unblock API call
-                await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        repo: state.session.did,
-                        collection: 'app.bsky.graph.block',
-                        rkey: user.rkey
-                    })
-                });
-                
-                // Verification check: Verify on the PDS that the record is really gone!
-                let isDeleted = false;
-                const MAX_RETRIES = 3;
-                for (let retry = 1; retry <= MAX_RETRIES; retry++) {
-                    // Wait a moment before checking (250ms, 500ms, 750ms) to allow PDS database indexing
-                    await new Promise(resolve => setTimeout(resolve, retry * 250));
                     
-                    try {
-                        // Try to get the record. If it throws an error (e.g. record not found), then it is successfully deleted.
-                        await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.getRecord?repo=${state.session.did}&collection=app.bsky.graph.block&rkey=${user.rkey}`);
-                        // If no error is thrown, the record still exists!
-                        isDeleted = false;
-                    } catch (getErr) {
-                        const errStr = getErr.message.toLowerCase();
-                        if (errStr.includes('not found') || errStr.includes('could not locate') || errStr.includes('fehler 400') || errStr.includes('fehler 404') || errStr.includes('does not exist')) {
-                            isDeleted = true;
-                            break; // Successfully verified deletion!
-                        } else {
-                            // Some other network error, we can log a warning and retry
-                            log(`Verifizierungs-Warnung bei @${user.handle} (Versuch ${retry}): ${getErr.message}`, 'warning');
+                    // Verification check: Verify on the PDS that the record is really gone!
+                    let isDeleted = false;
+                    const MAX_RETRIES = 3;
+                    for (let retry = 1; retry <= MAX_RETRIES; retry++) {
+                        // Wait a moment before checking (250ms, 500ms, 750ms) to allow PDS database indexing
+                        await new Promise(resolve => setTimeout(resolve, retry * 250));
+                        
+                        try {
+                            // Try to get the record. If it throws an error (e.g. record not found), then it is successfully deleted.
+                            await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.getRecord?repo=${state.session.did}&collection=app.bsky.graph.block&rkey=${user.rkey}`);
+                            // If no error is thrown, the record still exists!
+                            isDeleted = false;
+                        } catch (getErr) {
+                            const errStr = getErr.message.toLowerCase();
+                            if (errStr.includes('not found') || errStr.includes('could not locate') || errStr.includes('fehler 400') || errStr.includes('fehler 404') || errStr.includes('does not exist')) {
+                                isDeleted = true;
+                                break; // Successfully verified deletion!
+                            } else {
+                                // Some other network error, we can log a warning and retry
+                                log(`Verifizierungs-Warnung bei @${user.handle} (Versuch ${retry}): ${getErr.message}`, 'warning');
+                            }
                         }
                     }
+                    
+                    if (!isDeleted) {
+                        throw new Error('Verifizierung fehlgeschlagen: Der Block-Eintrag existiert nach dem Löschen weiterhin auf dem PDS.');
+                    }
+                    
+                    // Success
+                    user.status = 'unblocked';
+                    user.selected = false; // clear selection
+                    const progressText = `[${state.runTotal - state.queue.length}/${state.runTotal}]`;
+                    log(`${progressText} Erfolgreich unblocked und PDS-Löschung verifiziert: @${user.handle}`, 'success');
                 }
-                
-                if (!isDeleted) {
-                    throw new Error('Verifizierung fehlgeschlagen: Der Block-Eintrag existiert nach dem Löschen weiterhin auf dem PDS.');
-                }
-                
-                // Success
-                user.status = 'unblocked';
-                user.selected = false; // clear selection
-                const progressText = `[${state.runTotal - state.queue.length}/${state.runTotal}]`;
-                log(`${progressText} Erfolgreich unblocked und PDS-Löschung verifiziert: @${user.handle}`, 'success');
                 
             } catch (err) {
                 // Error
@@ -745,14 +996,20 @@ function updateUserCardUI(user) {
     const safeId = user.did.replace(':', '_');
     const card = document.getElementById(`block-card-${safeId}`);
     if (card) {
-        card.className = `block-item fade-in ${user.status}`;
+        const isPhantom = !state.repoRkeys.has(user.rkey);
+        card.className = `block-item fade-in ${user.status} ${isPhantom ? 'phantom' : ''}`;
         
         const badge = card.querySelector('.block-status-badge');
         if (badge) {
             let statusLabel = 'Blockiert';
+            badge.className = 'block-status-badge';
             if (user.status === 'processing') statusLabel = 'Löst...';
             if (user.status === 'unblocked') statusLabel = 'Entfernt';
             if (user.status === 'error') statusLabel = 'Fehler';
+            if (user.status === 'blocked' && isPhantom) {
+                statusLabel = '👻 Phantom';
+                badge.className = 'block-status-badge phantom';
+            }
             badge.textContent = statusLabel;
         }
         
@@ -835,6 +1092,172 @@ DOM.btnCancel.addEventListener('click', () => {
 DOM.btnClearLogs.addEventListener('click', () => {
     DOM.logTerminal.innerHTML = '<div class="log-entry system">[System] Protokoll geleert.</div>';
 });
+
+// JSON Backup Export
+DOM.btnExportJson.addEventListener('click', () => {
+    if (state.blockedUsers.length === 0) {
+        alert('Keine blockierten Konten zum Exportieren vorhanden.');
+        return;
+    }
+    
+    const dataToExport = state.blockedUsers.map(u => ({
+        did: u.did,
+        handle: u.handle,
+        displayName: u.displayName,
+        rkey: u.rkey,
+        indexedAt: u.indexedAt
+    }));
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const handle = state.session ? state.session.handle : 'bluesky';
+    const date = new Date().toISOString().split('T')[0];
+    
+    a.href = url;
+    a.download = `bluesky-blocklist-${handle}-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    log(`Blockliste mit ${dataToExport.length} Konten erfolgreich exportiert.`, 'success');
+});
+
+// JSON Backup Import
+DOM.btnImportJson.addEventListener('click', () => {
+    DOM.inputImportFile.click();
+});
+
+DOM.inputImportFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+        try {
+            const imported = JSON.parse(evt.target.result);
+            if (!Array.isArray(imported)) {
+                throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
+            }
+            
+            // Validate entries
+            const validEntries = imported.filter(u => u && typeof u === 'object' && u.did);
+            if (validEntries.length === 0) {
+                throw new Error('Keine gültigen Block-Einträge gefunden.');
+            }
+            
+            log(`Backup geladen: ${validEntries.length} Einträge gefunden.`, 'info');
+            
+            // Check which ones are missing
+            const currentDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
+            const missing = validEntries.filter(u => !currentDids.has(u.did));
+            
+            if (missing.length === 0) {
+                alert(`Alle ${validEntries.length} Konten aus dem Backup sind bereits blockiert! Keine Aktion erforderlich.`);
+                log('Import-Abgleich abgeschlossen: Keine fehlenden Blocks gefunden.', 'info');
+                return;
+            }
+            
+            const confirmMsg = `Backup enthält ${validEntries.length} Konten. Davon fehlen ${missing.length} auf deinem Account.\n\nMöchtest du diese ${missing.length} Konten jetzt wieder blockieren (wiederherstellen)?`;
+            if (confirm(confirmMsg)) {
+                await startRestoringFlow(missing);
+            }
+            
+        } catch (err) {
+            alert(`Fehler beim Importieren: ${err.message}`);
+            log(`Fehler beim Backup-Import: ${err.message}`, 'error');
+        } finally {
+            DOM.inputImportFile.value = '';
+        }
+    };
+    reader.readAsText(file);
+});
+
+// Start the block restoring flow
+async function startRestoringFlow(usersToRestore) {
+    state.queue = usersToRestore.map(u => u.did);
+    state.runTotal = usersToRestore.length;
+    state.isProcessing = true;
+    state.isPaused = false;
+    
+    // UI state adjustments
+    setActionButtonsDisabled(true);
+    DOM.progressContainer.classList.remove('hidden');
+    DOM.executionControls.classList.remove('hidden');
+    DOM.btnPause.classList.remove('hidden');
+    DOM.btnResume.classList.add('hidden');
+    DOM.btnCancel.disabled = false;
+    
+    log(`Starte die Wiederherstellung von ${state.queue.length} Blocks...`, 'system');
+    updateStats();
+    
+    state.abortController = new AbortController();
+    
+    const CONCURRENCY = 4;
+    const THROTTLE_DELAY = 100;
+    const workers = [];
+    
+    const worker = async () => {
+        while (state.queue.length > 0 && state.isProcessing && !state.isPaused) {
+            const currentDid = state.queue.shift();
+            if (!currentDid) continue;
+            
+            const user = usersToRestore.find(u => u.did === currentDid);
+            if (!user) continue;
+            
+            log(`Stelle Block für ${user.handle || currentDid} wieder her...`, 'info');
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY));
+                
+                if (!state.isProcessing || state.isPaused) {
+                    state.queue.unshift(currentDid);
+                    break;
+                }
+                
+                if (state.isDryRun) {
+                    log(`[Dry-Run] Würde Block für ${user.handle || currentDid} wiederherstellen.`, 'success');
+                    continue;
+                }
+                
+                await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        repo: state.session.did,
+                        collection: 'app.bsky.graph.block',
+                        record: {
+                            $type: 'app.bsky.graph.block',
+                            subject: currentDid,
+                            createdAt: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                log(`Erfolgreich wiederhergestellt: ${user.handle || currentDid}`, 'success');
+            } catch (err) {
+                log(`Fehler beim Wiederherstellen von ${user.handle || currentDid}: ${getErrorMessage(err)}`, 'error');
+            }
+            
+            updateStats();
+        }
+    };
+    
+    for (let i = 0; i < Math.min(CONCURRENCY, state.queue.length); i++) {
+        workers.push(worker());
+    }
+    
+    await Promise.all(workers);
+    
+    if (state.queue.length === 0 && state.isProcessing && !state.isPaused) {
+        log('Wiederherstellung abgeschlossen!', 'success');
+        state.isProcessing = false;
+        DOM.progressContainer.classList.add('hidden');
+        DOM.executionControls.classList.add('hidden');
+        setActionButtonsDisabled(false);
+        await fetchAllBlocks();
+    }
+}
 
 // Rescan Blocklist Handlers
 DOM.btnRescan.addEventListener('click', () => {
