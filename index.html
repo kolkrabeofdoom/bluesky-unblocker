@@ -130,6 +130,14 @@
                                 <button id="btn-select-48h" class="btn btn-small btn-secondary" title="Blocks der letzten 48 Stunden markieren">Letzte 48h</button>
                                 <button id="btn-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
                             </div>
+                            <div class="custom-time-filter">
+                                <input type="number" id="input-custom-time" value="7" min="1" title="Zeitwert eingeben">
+                                <select id="select-custom-unit" title="Zeiteinheit auswählen">
+                                    <option value="h">Stunden</option>
+                                    <option value="d" selected>Tage</option>
+                                </select>
+                                <button id="btn-select-custom" class="btn btn-small btn-secondary" title="Blocks im angegebenen Zeitraum markieren">Zeitraum markieren</button>
+                            </div>
                         </div>
                         <div class="action-buttons-group">
                             <button id="btn-unblock-selected" class="btn btn-danger-action btn-large">

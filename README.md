@@ -7,7 +7,7 @@ Ein elegantes, schnelles und sicheres Werkzeug zur Massenentfernung von Blocks a
 ## 🚀 Hauptmerkmale
 
 *   **Vollständige Massenabwicklung:** Entblocke Hunderte oder Tausende von Accounts mit nur einem Klick.
-*   **Intelligente Filter & Zeitfenster:** Filtere deine Blockliste nach Erstellungsdatum (z.B. nur Blocks aus der letzten Woche, dem letzten Monat oder ältere).
+*   **Intelligente Filter & Zeitfenster:** Filtere deine Blockliste nach Erstellungsdatum. Neben den Standard-Optionen (Letzte 24h, Letzte 48h) kannst du einen **frei definierbaren Zeitraum** (in Stunden oder Tagen) angeben, um gezielt Blocks aus der Vergangenheit auszuwählen.
 *   **Sicherer Worker-Queue:** Arbeitet mit kontrollierter Nebenläufigkeit (Concurrency) und automatischem Rate-Limit-Handling, um PDS-Überlastungen zu vermeiden.
 *   **Behebung von Phantom-Blocks:** Erkennt Diskrepanzen zwischen dem Bluesky AppView-Index und der physischen PDS-Datenbank und behebt diese automatisch (siehe [Phantom-Blocks-Erklärung](#-das-phantom-block-problem)).
 *   **Umfangreiches Live-Logging:** Detaillierte Fehlerberichte, Erfolgsmeldungen und Echtzeit-Statistiken während der Ausführung.

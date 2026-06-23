@@ -50,6 +50,9 @@ const DOM = {
     btnSelectAll: document.getElementById('btn-select-all'),
     btnSelect24h: document.getElementById('btn-select-24h'),
     btnSelect48h: document.getElementById('btn-select-48h'),
+    inputCustomTime: document.getElementById('input-custom-time'),
+    selectCustomUnit: document.getElementById('select-custom-unit'),
+    btnSelectCustom: document.getElementById('btn-select-custom'),
     btnDeselectAll: document.getElementById('btn-deselect-all'),
     btnUnblockSelected: document.getElementById('btn-unblock-selected'),
     btnUnblockAll: document.getElementById('btn-unblock-all'),
@@ -263,6 +266,9 @@ function setActionButtonsDisabled(disabled) {
     DOM.btnSelectAll.disabled = disabled;
     DOM.btnSelect24h.disabled = disabled;
     DOM.btnSelect48h.disabled = disabled;
+    DOM.btnSelectCustom.disabled = disabled;
+    DOM.inputCustomTime.disabled = disabled;
+    DOM.selectCustomUnit.disabled = disabled;
     DOM.btnDeselectAll.disabled = disabled;
     DOM.btnUnblockSelected.disabled = disabled;
     DOM.btnUnblockAll.disabled = disabled;
@@ -504,6 +510,16 @@ DOM.btnSelectAll.addEventListener('click', () => {
 
 DOM.btnSelect24h.addEventListener('click', () => selectBlocksByTimeframe(24));
 DOM.btnSelect48h.addEventListener('click', () => selectBlocksByTimeframe(48));
+DOM.btnSelectCustom.addEventListener('click', () => {
+    const value = parseInt(DOM.inputCustomTime.value, 10);
+    const unit = DOM.selectCustomUnit.value;
+    if (isNaN(value) || value <= 0) {
+        alert('Bitte gib eine gültige Zahl ein.');
+        return;
+    }
+    const hours = unit === 'h' ? value : value * 24;
+    selectBlocksByTimeframe(hours);
+});
 
 function selectBlocksByTimeframe(hours) {
     const now = new Date();
@@ -524,7 +540,15 @@ function selectBlocksByTimeframe(hours) {
     });
     updateStats();
     renderBlocklist();
-    log(`Es wurden ${count} Konten aus den letzten ${hours} Stunden ausgewählt.`, 'info');
+    
+    let timeText = '';
+    if (hours % 24 === 0) {
+        const days = hours / 24;
+        timeText = days === 1 ? 'letzten 24 Stunden (1 Tag)' : `letzten ${days} Tagen`;
+    } else {
+        timeText = hours === 1 ? 'letzten Stunde' : `letzten ${hours} Stunden`;
+    }
+    log(`Es wurden ${count} Konten aus den ${timeText} ausgewählt.`, 'info');
 }
 
 DOM.btnDeselectAll.addEventListener('click', () => {
