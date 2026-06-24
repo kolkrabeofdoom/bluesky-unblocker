@@ -1,88 +1,257 @@
-# Bluesky Block-Entferner (Bulk Unblocker)
+<div align="center">
 
-Ein elegantes, schnelles und sicheres Werkzeug zur Massenentfernung von Blocks auf Bluesky (AT-Protokoll). Die App läuft vollständig im Browser, kommuniziert direkt mit deinem PDS (Personal Data Server) und behebt automatisch sogenannte **"Phantom-Blocks"** (verwaiste Block-Einträge im Relay-Index).
+<img src="screenshots/logo.jpg" alt="C.T.H.U.L.H.U. Logo" width="160" style="border-radius: 50%;" />
 
----
+# C.T.H.U.L.H.U.
 
-## 🚀 Hauptmerkmale
+### **C**leanup **T**ool for **H**eavy **U**nblocks, **L**ist **H**andling & **U**ser-**S**ifting
 
-*   **Vollständige Massenabwicklung:** Entblocke Hunderte oder Tausende von Accounts mit nur einem Klick.
-*   **Intelligente Filter & Zeitfenster:** Filtere deine Blockliste nach Erstellungsdatum. Neben den Standard-Optionen (Letzte 24h, Letzte 48h) kannst du einen **frei definierbaren Zeitraum** (in Stunden oder Tagen) angeben, um gezielt Blocks aus der Vergangenheit auszuwählen.
-*   **Simulationsmodus (Dry-Run):** Schalte den Simulationsmodus ein, um Aktionen vorab risikofrei zu testen. Die Queue wird mit künstlichem Delay durchlaufen und im Protokoll protokolliert, ohne echte Schreibzugriffe an deinen PDS zu senden.
-*   **Blocklisten Backup & Wiederherstellung:** Exportiere deine gesamte Blockliste als strukturiertes JSON-Backup. Lade Backups hoch, um fehlende Blocks direkt wiederherzustellen (automatische Block-Wiedererstellung).
-*   **Block in Stummschaltung umwandeln (Block-to-Mute):** Konvertiere Blocks direkt in Stummschaltungen. Die ausgewählten Accounts werden zuerst stummgeschaltet (`muteActor`) und danach sicher entblockt (PDS-Repository-Alignment).
-*   **Erweiterte Sortierung & Handle-Filter:** Sortiere Profile chronologisch (neueste/älteste zuerst) oder alphabetisch (A-Z/Z-A). Filtere inaktive, gelöschte oder ungültige Accounts (z. B. mit dem Handle `handle.invalid`) mit einem Klick heraus.
-*   **Multi-Account Session Manager:** Verwalte und speichere mehrere Verbindungsprofile lokal in deinem Browser. Wechsle mit nur einem Klick blitzschnell zwischen deinen Accounts auf dem Login-Bildschirm.
-*   **Whitelist-Schutzliste:** Schütze wichtige Konten (z. B. Freunde oder Referenz-Accounts) davor, versehentlich bei Massen-Entblockungen gelöscht zu werden, indem du sie mit einem Schutzschild-Icon sperrst.
-*   **Blocklist Analyzer & Visual Insights:** Analysiere deine Blockliste visuell über ein interaktives SVG-Balkendiagramm, das die Blockhäufigkeit der letzten 10 Monate übersichtlich darstellt.
-*   **Automatische Bereinigung inaktiver Konten:** Nutze die dedizierte Worker-Queue, um ungültige oder gelöschte Handles (wie `handle.invalid`) gesammelt und sauber aus deinem Repository zu fegen.
-*   **Mute-Listen Konverter & Import:** Exportiere ausgewählte geblockte Benutzer direkt in eine native Bluesky-Stummschaltungsliste (Mute List) oder importiere Handles aus einer öffentlichen Liste für ein Massen-Blocking.
-*   **Sicherer Worker-Queue:** Arbeitet mit kontrollierter Nebenläufigkeit (Concurrency) und automatischem Rate-Limit-Handling, um PDS-Überlastungen zu vermeiden.
-*   **Behebung von Phantom-Blocks:** Erkennt Diskrepanzen zwischen dem Bluesky AppView-Index und der physischen PDS-Datenbank, markiert sie mit einem auffälligen Ghost-Icon (👻 Phantom) und behebt diese automatisch (siehe [Phantom-Blocks-Erklärung](#-das-phantom-block-problem)).
-*   **Umfangreiches Live-Logging:** Detaillierte Fehlerberichte, Erfolgsmeldungen und Echtzeit-Statistiken während der Ausführung.
-*   **Steuerungselemente & Echtzeit-Rescan:** Jederzeit pausieren, fortsetzen oder abbrechen. Nach Abschluss der Massenentfernung kannst du die Blockliste mit einem Klick neu scannen und final verifizieren.
-*   **Modernes Design:** Premium Darkmode-Layout mit flüssigen Animationen und Responsive Webdesign (für Desktop, Tablet und Smartphones).
+*A powerful, browser-based Bluesky account management suite*
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)](https://github.com/kolkrabeofdoom/C.T.H.U.L.H.U./releases)
+[![Platform](https://img.shields.io/badge/platform-Bluesky%20%2F%20AT%20Protocol-0085ff.svg)](https://bsky.app)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-green.svg)](https://nodejs.org)
+
+</div>
 
 ---
 
-## 🛠️ Technische Funktionsweise: Das "Phantom-Block"-Problem
-
-### Was ist ein Phantom-Block?
-Ein Phantom-Block tritt auf, wenn ein Account in der offiziellen Bluesky-App (oder im AppView-Index) als "geblockt" angezeigt wird, der eigentliche Block-Datensatz (`app.bsky.graph.block`) in der Repository-Datenbank deines PDS (Personal Data Server) jedoch nicht (mehr) existiert. 
-
-Dies kann durch asynchrone Replikationsfehler, Rollbacks oder Synchronisationsfehler zwischen Drittanbieter-PDS und dem Bluesky-Hauptrelay entstehen. Ein normaler Unblock-Befehl schlägt dann fehl, da kein Datensatz zum Löschen gefunden wird. Der Block bleibt auf dem Relay permanent aktiv.
-
-### Unsere Lösung (Repository-Alignment)
-Der Bluesky Block-Entferner gleicht die Daten automatisch ab:
-1.  **Erkennung:** Er ruft die Blockliste über den AppView-Dienst ab (`getBlocks`) und vergleicht jeden Eintrag mit den tatsächlichen Repository-Einträgen auf deinem PDS (`listRecords`).
-2.  **Klassifizierung:** Fehlt der PDS-Datensatz, wird der Account als **"Phantom-Block"** markiert.
-3.  **Bereinigung:** Die App materialisiert den Block kurzzeitig im PDS (`putRecord`) und löscht ihn direkt im Anschluss wieder (`deleteRecord`). Dies zwingt das Bluesky-Relay dazu, ein neues Firehose-Event zu verarbeiten und den Block endgültig zu entfernen.
+> **C.T.H.U.L.H.U.** is a self-hosted, privacy-first web tool for power users who want to take full control of their Bluesky experience — managing blocks, followers, feeds, lists, and interactions with surgical precision, all without handing over your credentials to a third-party cloud service.
 
 ---
 
-## 💻 Lokale Ausführung
+## ✨ Features at a Glance
 
-Das Projekt läuft komplett ohne externe Abhängigkeiten und benötigt keine Installation von Paketen via `npm`.
-
-### Voraussetzungen
-*   **Node.js** (empfohlen zur Bereitstellung des Webservers aufgrund von CORS-Restriktionen im Browser bei `file://`-Dateien).
-
-### Starten (Windows)
-1.  Doppelklicke auf die Datei `run.bat`.
-2.  Es öffnet sich ein Terminal und die App wird automatisch in deinem Standardbrowser unter `http://localhost:3000` geöffnet.
-
-### Starten (Andere Betriebssysteme)
-1.  Öffne ein Terminal im Projektverzeichnis.
-2.  Führe folgenden Befehl aus:
-    ```bash
-    node server.js
-    ```
-3.  Öffne deinen Browser und navigiere zu `http://localhost:3000`.
+| Module | Description |
+|---|---|
+| 🛡️ **Block-Entferner** | Bulk unblock users with phantom-record detection, whitelist protection & concurrency workers |
+| 👥 **Follower-Abgleich** | Compare your follows/followers, find non-mutuals, bulk follow or unfollow |
+| 🔍 **Überlappungs-Finder** | Find shared followers across 2–3 Bluesky accounts and batch-follow the overlap |
+| 👻 **Geister-Auditor** | Audit your follower list for bots, inactive accounts, and zombie profiles |
+| 💬 **Interaktions-Auditor** | Scan your recent post comments for spam bots and crypto scammers |
+| 🗂️ **Listen-Manager** | Browse, clone, and merge your Bluesky curation lists |
+| 📺 **Timeline-Filter** | Analyze your home feed for heavy reposters and quote-post spammers, then mute them in bulk |
+| 📜 **Verlauf & Whitelist** | Smart Whitelist Builder + full Mass-Action Undo Log with one-click rollback |
 
 ---
 
-## 🔒 Sicherheitshinweise
+## 📸 Screenshots
 
-*   **App-Passwörter verwenden:** Verwende niemals dein Hauptpasswort! Erstelle stattdessen in den Bluesky-Einstellungen unter *Einstellungen > App-Passwörter* ein temporäres Passwort. Dieses kann jederzeit widerrufen werden.
-*   **Direkte Verbindung:** Deine Zugangsdaten und Passwörter werden **niemals** an Dritte übertragen oder auf einem Server gespeichert. Alle Anfragen werden direkt von deinem Browser an die Bluesky-API-Endpunkte gesendet.
-*   **Synchronisationsverzögerung:** Falls du eine eigene PDS-Instanz verwendest, kann es je nach Relay-Lag bis zu einer Stunde dauern, bis unblockierte Profile in der offiziellen Bluesky-App (`bsky.app`) korrekt als unblockiert angezeigt werden. Die Löschung erfolgt jedoch sofort auf deinem Server.
+### Main Interface – Block Remover Tab
+![Main Interface](screenshots/main-interface.png)
+
+*The Block-Entferner tab shows your full blocklist as interactive cards. Stats dashboard, bulk select, whitelist protection, and phantom-record detection.*
 
 ---
 
-## 📁 Projektstruktur
+### 👻 Geister-Auditor – Follower Quality Audit
+![Ghost Auditor](screenshots/ghost-auditor.png)
+
+*Analyzes every follower for Spam-Bot patterns, total inactivity, and the new Zombie-Account heuristic. Soft-Block selected accounts to cleanly remove them from your follower list.*
+
+---
+
+### 📺 Timeline-Filter – Repost & Quote Analysis
+![Timeline Filter](screenshots/timeline-filter.png)
+
+*Fetches your home feed, groups posts by actor, and calculates per-user repost rates. Heavy reposters are pre-selected for bulk muting. Supports filtering by "Heavy Reposters ≥50%" or "Quote-Post Heavy".*
+
+---
+
+### 📜 Verlauf & Whitelist – Smart Whitelist + Undo Log
+![History & Whitelist](screenshots/history-whitelist.png)
+
+*Left: Smart Whitelist Builder auto-suggests conversational partners from your recent posts. Right: The Massen-Aktions-Verlauf logs every bulk action with one-click rollback.*
+
+---
+
+## 🧠 Feature Deep-Dives
+
+### 🛡️ Block-Entferner (Bulk Unblock)
+
+The core feature. Import your Bluesky block list and manage it with power:
+
+- **Phantom Record Detection**: Identifies blocks that exist in your local AT Protocol repo but no longer show up in the API — these "phantom" records can prevent clean unfollows.
+- **Whitelist Protection**: Mark accounts as protected. Whitelisted DIDs are never included in bulk unblock operations.
+- **Concurrency Workers**: 4 parallel workers with 100ms throttle to stay under API rate limits.
+- **Pause & Resume**: Mid-run pause/continue support.
+- **Dry-Run Mode**: Test operations without actually changing anything on Bluesky.
+
+### 👥 Follower-Abgleich (Follow Comparison)
+
+Compare who you follow vs. who follows you:
+
+- Load up to 3,000+ follows and followers via paginated API.
+- Visual badges: **Mutual**, **Folge ich**, **Folgt mir**, **Keine**.
+- Filter tabs: All, Not-Mutuals, Non-Followers, Mutuals.
+- Batch-follow or batch-unfollow with full concurrency queue.
+- Integrates Follower-Kopier mode: copy another account's followers to your own follows.
+
+### 🔍 Nischen- & Überlappungs-Finder (Niche Overlap Finder)
+
+Discover shared communities between accounts:
+
+- Enter 2 or 3 Bluesky handles to compare.
+- Fetches up to 1,500 followers per target handle.
+- Calculates the mathematical **intersection** of follower DIDs.
+- Shows relationship badges (who is already a mutual, following, or blocked).
+- Batch-follow the intersection to efficiently grow your network.
+
+### 👻 Geister-Auditor (Ghost & Bot Auditor)
+
+Three-tier follower quality analysis:
+
+| Badge | Criteria |
+|---|---|
+| ⚠️ **Bot?** | 0 posts + no bio/avatar, OR follows > 500 with ratio > 5× |
+| 🧟 **Zombie?** | Has posts but follows > 500, followers < 30, ratio > 8× — formerly dormant, now mass-following |
+| 💤 **Inaktiv** | 0 posts total |
+
+**Soft-Block** removes them cleanly: creates a block record and immediately deletes it, forcing a mutual unfollow without leaving a permanent block.
+
+### 💬 Interaktions-Auditor (Spam Comment Scanner)
+
+Protect your posts from spam:
+
+- Fetches your 15 most recent posts.
+- Retrieves all reply threads for each post.
+- **Spam Heuristics**: Regex-based detection of crypto/link spam patterns (`telegram`, `whatsapp`, `earn`, `crypto`, `dm me`, etc.).
+- Highlighted spam suspects with bulk block or bulk follow actions.
+
+### 🗂️ Listen-Manager (List Manager)
+
+Full curation list control:
+
+- Browse all your moderation and curation lists.
+- View list members in the same card grid UI.
+- **Clone List**: Duplicate a list with a new name.
+- **Merge Lists**: Combine two lists into one, automatically deduplicating overlapping DIDs.
+
+### 📺 Timeline-Filter (Feed Sifter)
+
+Curate your feed at the source:
+
+- Fetch your **home timeline** or your own **author feed**.
+- Group posts by actor and compute:
+  - `repostCount / postsCount` → Repost Percentage
+  - `quoteCount` → Quote-Post Heavy flag
+- Pre-select accounts with ≥ 50% repost rate for muting.
+- Bulk **mute** selected actors (silences them without unfollowing).
+- All mutes are logged to the Undo History.
+
+### 📜 Verlauf & Whitelist (History & Smart Whitelist)
+
+Never lose track of what you did:
+
+**Smart Whitelist Builder:**
+- Automatically scans your recent posts for reply-to handles and adds them to your whitelist.
+- Manual input: add any handle or DID manually.
+- Persisted in `localStorage` — survives page reloads.
+- Protected accounts are visually marked in all other tabs.
+
+**Massen-Aktions-Verlauf (Undo Log):**
+- Every bulk operation (follow, unfollow, block, unblock, soft-block, mute) is recorded.
+- Stores up to **50 entries** in `localStorage`.
+- One-click **↩️ Rückgängig** (Rollback) reverses each action type:
+  - `unfollow` → re-follows via `createRecord`
+  - `follow` → un-follows via `deleteRecord`
+  - `block` → removes the block record
+  - `unblock` → re-creates the block
+  - `mute` → calls `unmuteActor` for all targets
+  - `softblock` → warns and optionally re-follows
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) v18 or higher
+- A [Bluesky](https://bsky.app) account
+- An **App Password** (Settings → Privacy & Security → App Passwords)
+
+> ⚠️ **Never use your main account password.** Always generate an App Password.
+
+### Installation
+
+```bash
+git clone https://github.com/kolkrabeofdoom/C.T.H.U.L.H.U..git
+cd C.T.H.U.L.H.U.
+npm install
+```
+
+### Running
+
+```bash
+node server.js
+```
+
+Or on Windows, double-click `run.bat`.
+
+Then open your browser at: **http://localhost:3000**
+
+### Demo / Test Mode
+
+To explore the UI without logging in:
 
 ```
-Bluesky-Unblocker/
-├── index.html     # Struktur der Web-App & Benutzeroberfläche
-├── style.css      # Design, Layouts und CSS-Animationen
-├── app.js         # Logik, AT-Protokoll-Anbindung & Phantom-Block-Finder
-├── server.js      # Zero-Dependency Node.js Server
-├── run.bat        # Windows Launcher-Skript
-└── README.md      # Diese Dokumentation
+http://localhost:3000/?test=1
 ```
+
+This loads pre-populated mock data for all 8 tabs.
 
 ---
 
-## 📄 Lizenz
+## 🔐 Privacy & Security
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert. Weitere Informationen findest du in der Lizenzdatei (falls vorhanden) oder nutze den Code frei für deine eigenen Zwecke.
+- **100% local** — no data ever leaves your machine except direct AT Protocol API calls to `bsky.social` (or your custom PDS).
+- **No tracking, no analytics, no telemetry.**
+- Credentials are stored only in your browser's `sessionStorage` and cleared when you close the tab.
+- Whitelist and undo history are stored in `localStorage` under your DID — only you can access them.
+- All API calls use your own App Password session token with no intermediary.
+
+---
+
+## 🛠️ Technical Architecture
+
+```
+C.T.H.U.L.H.U./
+├── index.html          # Single-page app, all tab panels
+├── app.js              # ~6,000 lines: all state, API logic, UI rendering
+├── style.css           # ~1,600 lines: dark glassmorphism design system
+├── server.js           # Minimal Node.js static file server (CORS proxy not needed)
+├── run.bat             # Windows one-click launcher
+└── screenshots/        # README screenshots
+```
+
+**Design System:**
+- CSS custom properties (`--primary`, `--card-bg`, `--primary-glow`, etc.)
+- Glassmorphism cards with `backdrop-filter: blur()`
+- Outfit font (Google Fonts)
+- Smooth `fade-in` micro-animations
+
+**API Integration:**
+- AT Protocol (`com.atproto.*`) for record CRUD
+- Bluesky AppView (`app.bsky.*`) for social graph data
+- Fully paginates large datasets (follows, followers, blocks)
+- Concurrency workers (4×) with 100ms throttle
+
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports, and feature ideas are welcome! Please open an [Issue](https://github.com/kolkrabeofdoom/C.T.H.U.L.H.U./issues) or a Pull Request.
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) — Free to use, modify, and distribute.
+
+---
+
+## 🐦 Made with 🖤 for the Bluesky community
+
+*By [Kolkrabe of Doom](https://bsky.app/profile/kolkrabe.bsky.social) — "Just your average postanarchist nerd raven"*
+

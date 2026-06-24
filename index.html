@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bluesky Block-Entferner - Bulk Unblocker</title>
+    <title>C.T.H.U.L.H.U. – Cleanup Tool for Heavy Unblocks, List Handling & User-Sifting</title>
     <link rel="stylesheet" href="style.css">
     <!-- Google Fonts: Outfit (headings) and Inter (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,13 +16,10 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="logo-container">
-                <svg class="logo" viewBox="0 0 576 512" width="40" height="40" fill="currentColor">
-                    <!-- FontAwesome Bluesky butterfly icon representation -->
-                    <path d="M407.8 294.7c-3.3-13.2-18.7-72.2-82.5-108.9c-2.2-1.3-4.4-2.5-6.6-3.8c7.7-18.8 17.5-44 26.6-60.5c10.4-18.7 19.3-34.7 20-36c6.1-10.7 2.4-24.5-8.3-30.5S322.6 52.6 316.5 63.3c-.3 .5-8.9 15.9-19.1 34.2C288.7 82 278.4 69.3 268 59c-20.8-20.7-52.7-36.2-76.4-36.2C130 22.8 90 73 90 128.5c0 14 3 27.2 8.3 39c4.2 9.3 9.4 18.2 14.8 26.4c-42.5 13.9-74.8 45.4-86 86C21.4 300 12.8 322.4 12.8 348c0 74.7 60.5 135.2 135.2 135.2c61 0 114.7-38.4 130-94.8c1.6-6 3.1-12.2 4.4-18.5c1.3 6.3 2.8 12.5 4.4 18.5c15.3 56.4 69 94.8 130 94.8c74.7 0 135.2-60.5 135.2-135.2c0-25.6-8.6-48-14.3-68c-11.2-40.6-43.5-72.1-86-86c5.4-8.2 10.6-17.1 14.8-26.4c5.3-11.8 8.3-25 8.3-39c0-55.5-40-105.7-101.6-105.7c-23.7 0-55.6 15.5-76.4 36.2c-10.4 10.3-20.7 23-29.4 38.5c-10.2-18.3-18.8-33.7-19.1-34.2c-6.1-10.7-19.8-14.4-30.5-8.3s-14.4 19.8-8.3 30.5c.7 1.3 9.6 17.3 20 36c9.1 16.5 18.9 41.7 26.6 60.5c-2.2 1.3-4.4 2.5-6.6 3.8c-63.8 36.7-79.2 95.7-82.5 108.9c-2.2 8.7 1.3 17.7 8.8 22.3s17.2 2.6 23.9-3.9l60.2-58.8c4.6-4.5 10.7-7 17.1-7h1.4c6.4 0 12.5 2.5 17.1 7l60.2 58.8c6.7 6.5 16.4 8.5 23.9 3.9s11-13.6 8.8-22.3z"/>
-                </svg>
-                <h1>Bluesky Block-Entferner</h1>
+                <img src="logo.jpg" class="logo" alt="C.T.H.U.L.H.U. Logo">
+                <h1>C.T.H.U.L.H.U.</h1>
             </div>
-            <p class="subtitle">Entferne alle oder ausgewählte Blocks von deinem Bluesky-Konto auf einmal.</p>
+            <p class="subtitle">Cleanup Tool for Heavy Unblocks, List Handling & User-Sifting</p>
         </header>
 
         <main class="app-content">
@@ -93,221 +90,877 @@
                     </div>
                     <button id="btn-logout" class="btn btn-secondary">Abmelden</button>
                 </div>
+                <!-- Tabs Navigation -->
+                <div class="workspace-tabs fade-in">
+                    <button type="button" class="tab-btn active" id="tab-btn-blocklist" data-tab="tab-blocklist">🛡️ Block-Entferner</button>
+                    <button type="button" class="tab-btn" id="tab-btn-followers" data-tab="tab-followers">👥 Follower-Abgleich</button>
+                    <button type="button" class="tab-btn" id="tab-btn-overlap" data-tab="tab-overlap">🔍 Überlappungs-Finder</button>
+                    <button type="button" class="tab-btn" id="tab-btn-ghosts" data-tab="tab-ghosts">👻 Geister-Auditor</button>
+                    <button type="button" class="tab-btn" id="tab-btn-interactions" data-tab="tab-interactions">💬 Interaktions-Auditor</button>
+                    <button type="button" class="tab-btn" id="tab-btn-lists" data-tab="tab-lists">🗂️ Listen-Manager</button>
+                    <button type="button" class="tab-btn" id="tab-btn-timeline" data-tab="tab-timeline">📺 Timeline-Filter</button>
+                    <button type="button" class="tab-btn" id="tab-btn-history" data-tab="tab-history">📜 Verlauf & Whitelist</button>
+                </div>
 
-                <!-- Dashboard Controls & Status -->
-                <div class="dashboard-grid">
-                    <!-- Stats Card -->
-                    <div class="card stats-card fade-in">
-                        <h3>Statistik</h3>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-total">0</span>
-                                <span class="stat-label">Blockiert gesamt</span>
+                <!-- TAB 1: BLOCKLIST -->
+                <div id="tab-blocklist" class="tab-content fade-in">
+                    <!-- Dashboard Controls & Status -->
+                    <div class="dashboard-grid">
+                        <!-- Stats Card -->
+                        <div class="card stats-card fade-in">
+                            <h3>Statistik</h3>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-total">0</span>
+                                    <span class="stat-label">Blockiert gesamt</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
+                                <div class="stat-item success">
+                                    <span class="stat-value" id="stat-success">0</span>
+                                    <span class="stat-label">Entfernt</span>
+                                </div>
+                                <div class="stat-item error">
+                                    <span class="stat-value" id="stat-error">0</span>
+                                    <span class="stat-label">Fehler</span>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-selected">0</span>
-                                <span class="stat-label">Ausgewählt</span>
+
+                            <!-- Dry-Run Simulation Switch -->
+                            <div class="dry-run-wrapper">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="chk-dry-run">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span class="switch-slider-label-text" style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 8px; user-select: none;" title="Aktionen nur simulieren, ohne PDS-Einträge wirklich zu ändern">Simulationsmodus (Dry-Run)</span>
                             </div>
-                            <div class="stat-item success">
-                                <span class="stat-value" id="stat-success">0</span>
-                                <span class="stat-label">Entfernt</span>
+
+                            <!-- Block-Analyse Collapsible Panel -->
+                            <div class="analysis-panel-wrapper" style="margin-top: 15px; border-top: 1px solid var(--card-border); padding-top: 15px; margin-bottom: 15px;">
+                                <button type="button" id="btn-toggle-analysis" class="btn btn-small btn-secondary" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;" title="Block-Statistiken über die Zeit anzeigen">
+                                    <span>📊 Block-Analyse (Verlauf)</span>
+                                    <span id="analysis-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                                </button>
+                                <div id="analysis-content" class="analysis-content hidden" style="margin-top: 15px;">
+                                    <div id="chart-container" style="width: 100%; height: 180px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;">
+                                        <div class="info-text-small" style="color: var(--text-muted);">Keine Daten zum Analysieren geladen.</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="stat-item error">
-                                <span class="stat-value" id="stat-error">0</span>
-                                <span class="stat-label">Fehler</span>
+
+                            <!-- Progress Bar -->
+                            <div class="progress-container hidden" id="progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-text" id="progress-text">Vorbereitung...</div>
+                            </div>
+
+                            <!-- Execution Controls -->
+                            <div class="execution-controls hidden" id="execution-controls">
+                                <button id="btn-pause" class="btn btn-warning">Pause</button>
+                                <button id="btn-resume" class="btn btn-primary hidden">Fortsetzen</button>
+                                <button id="btn-cancel" class="btn btn-danger">Abbrechen</button>
+                            </div>
+
+                            <!-- Finished State Controls -->
+                            <div class="finished-controls hidden" id="finished-controls" style="margin-top: 15px; text-align: center;">
+                                <div class="success-box" style="margin-bottom: 12px; font-size: 0.9rem; justify-content: center;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                    <span>Vorgang abgeschlossen & verifiziert!</span>
+                                </div>
+                                <button id="btn-rescan-finished" class="btn btn-primary" style="width: 100%;" title="Blockliste neu laden und verifizieren">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="rescan-icon" style="margin-right: 6px; vertical-align: middle;">
+                                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                                    </svg>
+                                    <span>Blockliste neu scannen</span>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Dry-Run Simulation Switch -->
-                        <div class="dry-run-wrapper">
-                            <label class="switch-container">
-                                <input type="checkbox" id="chk-dry-run">
-                                <span class="switch-slider"></span>
-                            </label>
-                            <span class="switch-label" title="Aktionen nur simulieren, ohne PDS-Einträge wirklich zu ändern">Simulationsmodus (Dry-Run)</span>
+                        <!-- Action Control Panel -->
+                        <div class="card action-card fade-in">
+                            <h3>Aktionen</h3>
+                            <div class="filter-actions">
+                                <div class="filter-row">
+                                    <input type="text" id="search-input" placeholder="Name oder Handle filtern...">
+                                </div>
+                                <div class="filter-options-row">
+                                    <select id="select-sort" title="Blockliste sortieren">
+                                        <option value="date-desc" selected>Neueste zuerst</option>
+                                        <option value="date-asc">Älteste zuerst</option>
+                                        <option value="name-asc">Name A-Z</option>
+                                        <option value="name-desc">Name Z-A</option>
+                                    </select>
+                                    <label class="filter-checkbox-container" title="Nur Profile mit ungültigem Handle (z.B. gelöschte Accounts) anzeigen">
+                                        <input type="checkbox" id="chk-filter-inactive">
+                                        <span class="filter-checkbox-label">Inaktive/Gelöschte</span>
+                                    </label>
+                                </div>
+                                <div class="selection-buttons">
+                                    <button id="btn-select-all" class="btn btn-small btn-secondary" title="Alle Konten markieren">Alle</button>
+                                    <button id="btn-select-24h" class="btn btn-small btn-secondary" title="Blocks der letzten 24 Stunden markieren">Letzte 24h</button>
+                                    <button id="btn-select-48h" class="btn btn-small btn-secondary" title="Blocks der letzten 48 Stunden markieren">Letzte 48h</button>
+                                    <button id="btn-select-phantoms" class="btn btn-small btn-secondary" title="Nur Phantom-Blocks markieren">👻 Phantom-Blocks</button>
+                                    <button id="btn-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
+                                </div>
+                                <div class="custom-time-filter">
+                                    <input type="number" id="input-custom-time" value="7" min="1" title="Zeitwert eingeben">
+                                    <select id="select-custom-unit" title="Zeiteinheit auswählen">
+                                        <option value="h">Stunden</option>
+                                        <option value="d" selected>Tage</option>
+                                    </select>
+                                    <button id="btn-select-custom" class="btn btn-small btn-secondary" title="Blocks im angegebenen Zeitraum markieren">Zeitraum markieren</button>
+                                </div>
+                            </div>
+                            <div class="action-buttons-group">
+                                <button id="btn-unblock-selected" class="btn btn-danger-action btn-large">
+                                    <span>Markierte Blocks aufheben</span>
+                                </button>
+                                <button id="btn-unblock-all" class="btn btn-danger-action btn-large">
+                                    <span>ALLE Blocks aufheben</span>
+                                </button>
+                                <button id="btn-mute-selected" class="btn btn-secondary-action btn-large">
+                                    <span>Markierte in Stummschaltung umwandeln</span>
+                                </button>
+                                <button id="btn-clean-inactives" class="btn btn-secondary-action btn-large" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; background: rgba(245, 158, 11, 0.1);" title="Alle inaktiven und gelöschten Accounts (z.B. handle.invalid) sofort entblocken">
+                                    <span>Inaktive/Gelöschte bereinigen</span>
+                                </button>
+                            </div>
+                            <div id="action-info" class="info-text-small">
+                                Wähle Konten aus der Liste unten aus oder klicke direkt auf "ALLE Blocks aufheben", um deine gesamte Blockliste zu leeren.
+                            </div>
+                            
+                            <!-- Backup & Restore -->
+                            <div class="backup-restore-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Backup & Wiederherstellung</h4>
+                                <div class="backup-buttons" style="display: flex; gap: 8px;">
+                                    <button id="btn-export-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste als JSON-Backup herunterladen">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                        </svg>
+                                        <span>Export JSON</span>
+                                    </button>
+                                    <button id="btn-import-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste aus Backup wiederherstellen">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                        </svg>
+                                        <span>Import Backup</span>
+                                    </button>
+                                    <input type="file" id="input-import-file" accept=".json" class="hidden">
+                                </div>
+                            </div>
+
+                            <!-- Mute-Listen Werkzeuge -->
+                            <div class="list-tools-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Mute-Listen Werkzeuge</h4>
+                                <div class="list-buttons" style="display: flex; gap: 8px;">
+                                    <button id="btn-export-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Markierte Konten als abonnierbare Mute-Liste auf Bluesky veröffentlichen">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                        </svg>
+                                        <span>Mute-Liste erstellen</span>
+                                    </button>
+                                    <button id="btn-import-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Profile aus einer Bluesky Liste laden und markieren">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z"/>
+                                        </svg>
+                                        <span>Aus Liste importieren</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="warning-box" style="margin-top: 15px; text-align: left;">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: var(--warning); margin-top: 2px;">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                <span>
+                                    <strong>Verzögerung bei Drittanbieter-PDS (z.B. eigene PDS-Instanzen):</strong> Wenn dein PDS-Server eine Synchronisationsverzögerung zum Bluesky-Relay hat, kann es eine Weile dauern, bis aufgehobene Blocks in der offiziellen App (bsky.app) als entblockt angezeigt werden. Die Löschung wird jedoch sofort auf deinem eigenen PDS-Server durchgeführt und verifiziert.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blocklist Section -->
+                    <div class="card list-card fade-in">
+                        <div class="card-header-flex">
+                            <h2>Blockierte Konten</h2>
+                            <div class="header-actions-group">
+                                <span class="badge" id="visible-count-badge">0 geladen</span>
+                                <button id="btn-rescan" class="btn btn-small btn-secondary" title="Blockliste neu laden und verifizieren">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="rescan-icon" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                                    </svg>
+                                    <span>Erneut scannen</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="loading-blocks" class="loading-state">
+                            <span class="spinner-large"></span>
+                            <p>Lade Blockliste herunter... Bitte warten.</p>
+                            <p class="sub-loading-text" id="loading-cursor-text">Hole Datensätze...</p>
                         </div>
 
-                        <!-- Block-Analyse Collapsible Panel -->
-                        <div class="analysis-panel-wrapper" style="margin-top: 15px; border-top: 1px solid var(--card-border); padding-top: 15px; margin-bottom: 15px;">
-                            <button type="button" id="btn-toggle-analysis" class="btn btn-small btn-secondary" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;" title="Block-Statistiken über die Zeit anzeigen">
-                                <span>📊 Block-Analyse (Verlauf)</span>
-                                <span id="analysis-arrow" style="transition: transform 0.3s; display: inline-block;">▼</span>
+                        <div id="empty-blocks" class="empty-state hidden">
+                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>Keine blockierten Konten gefunden!</p>
+                        </div>
+
+                        <!-- Blocklist Grid -->
+                        <div id="block-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: FOLLOWER COMPARISON -->
+                <div id="tab-followers" class="tab-content hidden fade-in">
+                    <!-- Workspace Mode Selector -->
+                    <div class="workspace-mode-selector" style="margin-bottom: 20px; display: flex; gap: 10px; max-width: 100%;">
+                        <button type="button" class="btn btn-secondary active" id="btn-mode-copy" style="flex: 1; padding: 10px; font-size: 0.95rem;">👥 Modus: Follower kopieren</button>
+                        <button type="button" class="btn btn-secondary" id="btn-mode-clean" style="flex: 1; padding: 10px; font-size: 0.95rem;">🧹 Modus: Unfollow-Cleaner</button>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <!-- Target Account Control Card -->
+                        <div class="card stats-card fade-in">
+                            <h3 id="followers-control-title">Ziel-Account & Status</h3>
+                            
+                            <!-- Copy Mode Wrapper -->
+                            <div id="followers-target-form-wrapper">
+                                <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                    Gib den Handle eines Accounts ein, um dessen Follower mit deinen abzugleichen.
+                                </p>
+                                <form id="followers-target-form" style="margin-bottom: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label for="target-identifier">Bluesky Handle / DID des Ziel-Accounts</label>
+                                        <input type="text" id="target-identifier" required placeholder="z.B. zielname.bsky.social">
+                                    </div>
+                                    <button type="submit" id="btn-load-target" class="btn btn-primary" style="width: 100%;">
+                                        <span>Follower laden</span>
+                                        <span class="spinner hidden"></span>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Clean Mode Wrapper (Unfollow Cleaner) -->
+                            <div id="unfollow-cleaner-wrapper" class="hidden">
+                                <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                    Analysiere Personen, denen du folgst, um Inaktive oder Nicht-Mutuals (die dir nicht zurückfolgen) zu finden.
+                                </p>
+                                <button type="button" id="btn-analyze-unfollow" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                                    <span>Eigene Follows analysieren</span>
+                                    <span class="spinner hidden"></span>
+                                </button>
+                            </div>
+
+                            <!-- Own Cached Data Status -->
+                            <div class="info-box-wrapper" style="border-top: 1px solid var(--card-border); padding-top: 15px; margin-bottom: 15px;">
+                                <div id="own-data-status" class="info-text-small" style="text-align: left; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 0;">
+                                    <span>Eigene Daten: <strong id="own-data-status-text">Nicht geladen</strong></span>
+                                    <button type="button" id="btn-reload-own-data" class="btn btn-small btn-secondary" title="Eigene Follower/Follows-Daten neu laden" style="padding: 4px 8px;">🔄 Aktualisieren</button>
+                                </div>
+                            </div>
+
+                            <!-- Target Stats Grid -->
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-target-loaded">0</span>
+                                    <span class="stat-label">Geladen</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-target-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
+                                <div class="stat-item success">
+                                    <span class="stat-value" id="stat-target-mutual">0</span>
+                                    <span class="stat-label" id="label-stat-mutual">Mutuals</span>
+                                </div>
+                                <div class="stat-item error">
+                                    <span class="stat-value" id="stat-target-blocked">0</span>
+                                    <span class="stat-label" id="label-stat-blocked">Blockiert</span>
+                                </div>
+                            </div>
+
+                            <!-- Follow/Unfollow Progress Bar -->
+                            <div class="progress-container hidden" id="follow-progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="follow-progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-text" id="follow-progress-text">Folge...</div>
+                            </div>
+
+                            <!-- Follow/Unfollow controls -->
+                            <div class="execution-controls hidden" id="follow-execution-controls">
+                                <button id="btn-follow-pause" class="btn btn-warning">Pause</button>
+                                <button id="btn-follow-resume" class="btn btn-primary hidden">Fortsetzen</button>
+                                <button id="btn-follow-cancel" class="btn btn-danger">Abbrechen</button>
+                            </div>
+                        </div>
+
+                        <!-- Actions Card for Follower list -->
+                        <div class="card action-card fade-in">
+                            <h3>Aktionen & Filter</h3>
+                            <div class="filter-actions">
+                                <div class="filter-row">
+                                    <input type="text" id="follower-search-input" placeholder="Nach Name oder Handle filtern...">
+                                </div>
+                                <div class="filter-options-row">
+                                    <select id="select-relationship-filter" title="Nach Beziehung filtern" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                        <option value="all" selected>Alle Beziehungen</option>
+                                        <option value="not-following">Folge ich noch nicht</option>
+                                        <option value="following">Folge ich bereits</option>
+                                        <option value="mutual">Mutual Followers</option>
+                                        <option value="blocked">Blockierte Accounts</option>
+                                    </select>
+                                    <select id="select-quality-filter" title="Nach Profil-Qualität filtern" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; margin-top: 8px;">
+                                        <option value="all" selected>Alle Profile</option>
+                                        <option value="active">Aktiv (min. 1 Post)</option>
+                                        <option value="inactive">Inaktiv (0 Posts)</option>
+                                        <option value="spambot">👻 Spam-Bot Verdacht</option>
+                                    </select>
+                                </div>
+                                <div class="selection-buttons">
+                                    <button id="btn-follower-select-all" class="btn btn-small btn-secondary" title="Alle angezeigten Konten markieren">Alle</button>
+                                    <button id="btn-follower-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons-group">
+                                <button id="btn-follow-selected" class="btn btn-primary btn-large">
+                                    <span>Markierten Accounts folgen</span>
+                                </button>
+                                <button id="btn-unfollow-selected" class="btn btn-danger-action btn-large hidden">
+                                    <span>Markierten Accounts entfolgen</span>
+                                </button>
+                            </div>
+                            
+                            <div id="follow-action-info" class="info-text-small" style="margin-top: 15px;">
+                                Markiere die Accounts in der Liste, denen du folgen möchtest, und klicke auf "Markierten Accounts folgen".
+                            </div>
+
+                            <!-- Export & Import -->
+                            <div class="backup-restore-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Export & Import</h4>
+                                <div class="backup-buttons" style="display: flex; gap: 8px;">
+                                    <button id="btn-follower-export-csv" class="btn btn-small btn-secondary" style="flex: 1;" title="Aktuelle Liste als CSV-Datei herunterladen">
+                                        <span>Export CSV</span>
+                                    </button>
+                                    <button id="btn-follower-export-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Aktuelle Liste als JSON-Datei herunterladen">
+                                        <span>Export JSON</span>
+                                    </button>
+                                    <button id="btn-follower-import-custom" class="btn btn-small btn-secondary" style="flex: 1;" title="Profile aus eigener Text- oder JSON-Datei importieren">
+                                        <span>Import Liste</span>
+                                    </button>
+                                    <input type="file" id="input-follower-import-file" accept=".txt,.json,.csv" class="hidden">
+                                </div>
+                            </div>
+
+                            <!-- List Management -->
+                            <div class="list-tools-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Listen-Management</h4>
+                                <div style="display: flex; gap: 8px; flex-direction: column;">
+                                    <input type="text" id="input-new-list-name" placeholder="Name für neue Bluesky-Liste..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: var(--font-sans); font-size: 0.9rem; padding: 8px 12px; transition: var(--transition);">
+                                    <button id="btn-follower-add-to-list" class="btn btn-small btn-secondary" style="width: 100%; font-size: 0.85rem;" title="Markierte Profile in eine neue Bluesky-Benutzerliste eintragen">
+                                        <span>In neue Bluesky-Liste eintragen</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target Follower List Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2 id="follower-list-title">Follower des Ziel-Accounts</h2>
+                            <div class="header-actions-group">
+                                <span class="badge" id="follower-visible-count-badge">0 geladen</span>
+                                <button id="btn-load-more-target" class="btn btn-small btn-secondary hidden" title="Nächste 100 Follower laden">
+                                    <span>Mehr laden</span>
+                                </button>
+                                <button id="btn-load-all-target" class="btn btn-small btn-secondary hidden" title="Alle verbleibenden Follower automatisch nacheinander laden">
+                                    <span>Alle laden</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="loading-followers" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Lade Follower des Ziel-Accounts... Bitte warten.</p>
+                            <p class="sub-loading-text" id="loading-followers-cursor-text">Hole Datensätze...</p>
+                        </div>
+
+                        <div id="empty-followers" class="empty-state">
+                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 21c-2.243 0-4.352-.647-6.132-1.766L4 19.128m-.003 0a4.125 4.125 0 017.533-2.493M4 19.128v-.003c.501-.91.786-1.957.786-3.07M15 9.128a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm6.75 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                            </svg>
+                            <p id="empty-followers-text">Gib einen Ziel-Account ein und klicke auf "Follower laden".</p>
+                        </div>
+
+                        <!-- Target Follower Grid -->
+                        <div id="follower-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: OVERLAP ANALYZER -->
+                <div id="tab-overlap" class="tab-content hidden fade-in">
+                    <div class="dashboard-grid">
+                        <!-- Targets Input Control Card -->
+                        <div class="card stats-card fade-in">
+                            <h3>Ziel-Accounts & Status</h3>
+                            <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                Gib bis zu 3 Handles ein, um deren gemeinsame Follower (Schnittmenge) zu finden.
+                            </p>
+                            <form id="overlap-form" style="margin-bottom: 20px;">
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label for="overlap-target-1">Account 1</label>
+                                    <input type="text" id="overlap-target-1" required placeholder="z.B. user1.bsky.social">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label for="overlap-target-2">Account 2</label>
+                                    <input type="text" id="overlap-target-2" required placeholder="z.B. user2.bsky.social">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label for="overlap-target-3">Account 3 (Optional)</label>
+                                    <input type="text" id="overlap-target-3" placeholder="z.B. user3.bsky.social">
+                                </div>
+                                <button type="submit" id="btn-load-overlap" class="btn btn-primary" style="width: 100%;">
+                                    <span>Schnittmenge laden</span>
+                                    <span class="spinner hidden"></span>
+                                </button>
+                            </form>
+
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-overlap-loaded">0</span>
+                                    <span class="stat-label">Gemeinsam</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-overlap-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
+                            </div>
+
+                            <!-- Follow Progress -->
+                            <div class="progress-container hidden" id="overlap-progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="overlap-progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-text" id="overlap-progress-text">Folge...</div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Card -->
+                        <div class="card action-card fade-in">
+                            <h3>Aktionen & Filter</h3>
+                            <div class="filter-actions">
+                                <div class="filter-row">
+                                    <input type="text" id="overlap-search-input" placeholder="Nach Name oder Handle filtern...">
+                                </div>
+                                <div class="selection-buttons">
+                                    <button id="btn-overlap-select-all" class="btn btn-small btn-secondary">Alle</button>
+                                    <button id="btn-overlap-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
+                                </div>
+                            </div>
+                            <div class="action-buttons-group" style="margin-top: 20px;">
+                                <button id="btn-overlap-follow-selected" class="btn btn-primary btn-large" style="width: 100%;">
+                                    <span>Ausgewählten Accounts folgen</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overlapping Followers List Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2>Gemeinsame Follower</h2>
+                            <span class="badge" id="overlap-visible-count-badge">0 geladen</span>
+                        </div>
+                        <div id="loading-overlap" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Berechne Schnittmenge und lade Profile... Bitte warten.</p>
+                        </div>
+                        <div id="empty-overlap" class="empty-state">
+                            <p>Gib mindestens zwei Ziel-Accounts ein und klicke auf "Schnittmenge laden".</p>
+                        </div>
+                        <div id="overlap-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: GHOST AUDITOR -->
+                <div id="tab-ghosts" class="tab-content hidden fade-in">
+                    <div class="dashboard-grid">
+                        <div class="card stats-card fade-in">
+                            <h3>Follower-Audit & Status</h3>
+                            <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                Analysiere deine Follower, um Spam-Bots oder völlig inaktive Accounts zu identifizieren.
+                            </p>
+                            <button type="button" id="btn-analyze-ghosts" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                                <span>Follower-Audit starten</span>
+                                <span class="spinner hidden"></span>
                             </button>
-                            <div id="analysis-content" class="analysis-content hidden" style="margin-top: 15px;">
-                                <div id="chart-container" style="width: 100%; height: 180px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;">
-                                    <div class="info-text-small" style="color: var(--text-muted);">Keine Daten zum Analysieren geladen.</div>
+
+                            <div class="stats-grid">
+                                <div class="stat-item error">
+                                    <span class="stat-value" id="stat-ghosts-bots">0</span>
+                                    <span class="stat-label">Spam-Bots</span>
+                                </div>
+                                <div class="stat-item warning" style="border-color: rgba(132, 204, 22, 0.3); color: #a3e635;">
+                                    <span class="stat-value" id="stat-ghosts-zombies">0</span>
+                                    <span class="stat-label">Zombie-Verdacht</span>
+                                </div>
+                                <div class="stat-item warning">
+                                    <span class="stat-value" id="stat-ghosts-inactive">0</span>
+                                    <span class="stat-label">Inaktiv</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-ghosts-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
+                            </div>
+
+                            <!-- Soft-Block Progress -->
+                            <div class="progress-container hidden" id="ghosts-progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="ghosts-progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-text" id="ghosts-progress-text">Bereinige...</div>
+                            </div>
+                        </div>
+
+                        <!-- Actions & Help -->
+                        <div class="card action-card fade-in">
+                            <h3>Soft-Block Aktionen</h3>
+                            <p class="info-text" style="font-size: 0.85rem; margin-bottom: 15px; line-height: 1.4;">
+                                💡 **Was ist ein Soft-Block?** <br>
+                                Der Account wird blockiert und sofort wieder entblockt. Dadurch wird er gezwungen, dir zu entfolgen, ohne dauerhaft gesperrt zu bleiben. Perfekt, um Karteileichen und Bots loszuwerden!
+                            </p>
+                            <div class="filter-actions">
+                                <div class="selection-buttons">
+                                    <button id="btn-ghosts-select-all" class="btn btn-small btn-secondary">Alle</button>
+                                    <button id="btn-ghosts-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
+                                </div>
+                            </div>
+                            <div class="action-buttons-group" style="margin-top: 20px;">
+                                <button id="btn-ghosts-softblock-selected" class="btn btn-danger-action btn-large" style="width: 100%;">
+                                    <span>Ausgewählte per Soft-Block entfernen</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ghost Followers List Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2>Auditiertes Follower-Verzeichnis</h2>
+                            <span class="badge" id="ghosts-visible-count-badge">0 geladen</span>
+                        </div>
+                        <div id="loading-ghosts" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Analysiere deine Follower-Profile... Bitte warten.</p>
+                        </div>
+                        <div id="empty-ghosts" class="empty-state">
+                            <p>Klicke auf "Follower-Audit starten", um deine Follower auf Inaktivität und Spam-Aktivität zu durchsuchen.</p>
+                        </div>
+                        <div id="ghosts-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: INTERACTION AUDITOR -->
+                <div id="tab-interactions" class="tab-content hidden fade-in">
+                    <div class="dashboard-grid">
+                        <div class="card stats-card fade-in">
+                            <h3>Beiträge & Antworten</h3>
+                            <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                Wähle einen deiner letzten Beiträge, um Antworten nach Spam-Bots zu analysieren oder neue Kontakte zu knüpfen.
+                            </p>
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="select-user-posts">Deine letzten Beiträge</label>
+                                <select id="select-user-posts" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                    <option value="" disabled selected>Beiträge werden geladen...</option>
+                                </select>
+                            </div>
+                            
+                            <button type="button" id="btn-load-replies" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                                <span>Antworten analysieren</span>
+                                <span class="spinner hidden"></span>
+                            </button>
+
+                            <div class="stats-grid">
+                                <div class="stat-item error">
+                                    <span class="stat-value" id="stat-interact-spam">0</span>
+                                    <span class="stat-label">Spam-Verdacht</span>
+                                </div>
+                                <div class="stat-item success">
+                                    <span class="stat-value" id="stat-interact-potential">0</span>
+                                    <span class="stat-label">Potential Follow</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-interact-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Progress Bar -->
-                        <div class="progress-container hidden" id="progress-container">
-                            <div class="progress-bar-wrapper">
-                                <div class="progress-bar" id="progress-bar" style="width: 0%;"></div>
+                        <!-- Actions & Mass Operations -->
+                        <div class="card action-card fade-in">
+                            <h3>Massen-Aktionen</h3>
+                            <div class="filter-actions">
+                                <div class="filter-row">
+                                    <select id="select-interaction-filter" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                        <option value="all" selected>Alle Antworten</option>
+                                        <option value="spam">Nur Spam-Verdacht</option>
+                                        <option value="non-follow">Nur Accounts, denen ich nicht folge</option>
+                                    </select>
+                                </div>
+                                <div class="selection-buttons" style="margin-top: 10px;">
+                                    <button id="btn-interact-select-all" class="btn btn-small btn-secondary">Alle</button>
+                                    <button id="btn-interact-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
+                                </div>
                             </div>
-                            <div class="progress-text" id="progress-text">Vorbereitung...</div>
-                        </div>
-
-                        <!-- Execution Controls -->
-                        <div class="execution-controls hidden" id="execution-controls">
-                            <button id="btn-pause" class="btn btn-warning">Pause</button>
-                            <button id="btn-resume" class="btn btn-primary hidden">Fortsetzen</button>
-                            <button id="btn-cancel" class="btn btn-danger">Abbrechen</button>
-                        </div>
-
-                        <!-- Finished State Controls -->
-                        <div class="finished-controls hidden" id="finished-controls" style="margin-top: 15px; text-align: center;">
-                            <div class="success-box" style="margin-bottom: 12px; font-size: 0.9rem; justify-content: center;">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <span>Vorgang abgeschlossen & verifiziert!</span>
+                            <div class="action-buttons-group" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                                <button id="btn-interact-block-selected" class="btn btn-danger-action btn-large">
+                                    <span>Ausgewählte blockieren</span>
+                                </button>
+                                <button id="btn-interact-follow-selected" class="btn btn-primary btn-large">
+                                    <span>Ausgewählten folgen</span>
+                                </button>
                             </div>
-                            <button id="btn-rescan-finished" class="btn btn-primary" style="width: 100%;" title="Blockliste neu laden und verifizieren">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="rescan-icon" style="margin-right: 6px; vertical-align: middle;">
-                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                                </svg>
-                                <span>Blockliste neu scannen</span>
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Action Control Panel -->
-                    <div class="card action-card fade-in">
-                        <h3>Aktionen</h3>
-                        <div class="filter-actions">
-                            <div class="filter-row">
-                                <input type="text" id="search-input" placeholder="Name oder Handle filtern...">
-                            </div>
-                            <div class="filter-options-row">
-                                <select id="select-sort" title="Blockliste sortieren">
-                                    <option value="date-desc" selected>Neueste zuerst</option>
-                                    <option value="date-asc">Älteste zuerst</option>
-                                    <option value="name-asc">Name A-Z</option>
-                                    <option value="name-desc">Name Z-A</option>
+                    <!-- Interactions List Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2>Antworten & Interaktionen</h2>
+                            <span class="badge" id="interact-visible-count-badge">0 geladen</span>
+                        </div>
+                        <div id="loading-interactions" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Lade Kommentare und analysiere Texte... Bitte warten.</p>
+                        </div>
+                        <div id="empty-interactions" class="empty-state">
+                            <p>Wähle einen Beitrag aus und klicke auf "Antworten analysieren".</p>
+                        </div>
+                        <div id="interactions-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: LIST MANAGER -->
+                <div id="tab-lists" class="tab-content hidden fade-in">
+                    <div class="dashboard-grid">
+                        <div class="card stats-card fade-in">
+                            <h3>Listen & Feeds verwalten</h3>
+                            <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                Verwalte deine Bluesky-Listen. Du kannst sie klonen oder zwei Listen zusammenführen.
+                            </p>
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="select-user-lists-primary">Primäre Liste (Quelle / Basis)</label>
+                                <select id="select-user-lists-primary" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                    <option value="" disabled selected>Listen werden geladen...</option>
                                 </select>
-                                <label class="filter-checkbox-container" title="Nur Profile mit ungültigem Handle (z.B. gelöschte Accounts) anzeigen">
-                                    <input type="checkbox" id="chk-filter-inactive">
-                                    <span class="filter-checkbox-label">Inaktive/Gelöschte</span>
-                                </label>
                             </div>
-                            <div class="selection-buttons">
-                                <button id="btn-select-all" class="btn btn-small btn-secondary" title="Alle Konten markieren">Alle</button>
-                                <button id="btn-select-24h" class="btn btn-small btn-secondary" title="Blocks der letzten 24 Stunden markieren">Letzte 24h</button>
-                                <button id="btn-select-48h" class="btn btn-small btn-secondary" title="Blocks der letzten 48 Stunden markieren">Letzte 48h</button>
-                                <button id="btn-select-phantoms" class="btn btn-small btn-secondary" title="Nur Phantom-Blocks markieren">👻 Phantom-Blocks</button>
-                                <button id="btn-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
-                            </div>
-                            <div class="custom-time-filter">
-                                <input type="number" id="input-custom-time" value="7" min="1" title="Zeitwert eingeben">
-                                <select id="select-custom-unit" title="Zeiteinheit auswählen">
-                                    <option value="h">Stunden</option>
-                                    <option value="d" selected>Tage</option>
-                                </select>
-                                <button id="btn-select-custom" class="btn btn-small btn-secondary" title="Blocks im angegebenen Zeitraum markieren">Zeitraum markieren</button>
-                            </div>
-                        </div>
-                        <div class="action-buttons-group">
-                            <button id="btn-unblock-selected" class="btn btn-danger-action btn-large">
-                                <span>Markierte Blocks aufheben</span>
+
+                            <button type="button" id="btn-load-list-members" class="btn btn-primary" style="width: 100%; margin-bottom: 15px;">
+                                <span>Mitglieder anzeigen</span>
                             </button>
-                            <button id="btn-unblock-all" class="btn btn-danger-action btn-large">
-                                <span>ALLE Blocks aufheben</span>
-                            </button>
-                            <button id="btn-mute-selected" class="btn btn-secondary-action btn-large">
-                                <span>Markierte in Stummschaltung umwandeln</span>
-                            </button>
-                            <button id="btn-clean-inactives" class="btn btn-secondary-action btn-large" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; background: rgba(245, 158, 11, 0.1);" title="Alle inaktiven und gelöschten Accounts (z.B. handle.invalid) sofort entblocken">
-                                <span>Inaktive/Gelöschte bereinigen</span>
-                            </button>
-                        </div>
-                        <div id="action-info" class="info-text-small">
-                            Wähle Konten aus der Liste unten aus oder klicke direkt auf "ALLE Blocks aufheben", um deine gesamte Blockliste zu leeren.
-                        </div>
-                        
-                        <!-- Backup & Restore -->
-                        <div class="backup-restore-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
-                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Backup & Wiederherstellung</h4>
-                            <div class="backup-buttons" style="display: flex; gap: 8px;">
-                                <button id="btn-export-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste als JSON-Backup herunterladen">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                                    </svg>
-                                    <span>Export JSON</span>
-                                </button>
-                                <button id="btn-import-json" class="btn btn-small btn-secondary" style="flex: 1;" title="Blockliste aus Backup wiederherstellen">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                                    </svg>
-                                    <span>Import Backup</span>
-                                </button>
-                                <input type="file" id="input-import-file" accept=".json" class="hidden">
+                            
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-lists-members-count">0</span>
+                                    <span class="stat-label">Mitglieder</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-lists-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Mute-Listen Werkzeuge -->
-                        <div class="list-tools-section" style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 15px;">
-                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">Mute-Listen Werkzeuge</h4>
-                            <div class="list-buttons" style="display: flex; gap: 8px;">
-                                <button id="btn-export-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Markierte Konten als abonnierbare Mute-Liste auf Bluesky veröffentlichen">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                    </svg>
-                                    <span>Mute-Liste erstellen</span>
+                        <!-- Cloning and Merging Card -->
+                        <div class="card action-card fade-in">
+                            <h3>Aktionen & Operationen</h3>
+                            
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Klonen</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column; margin-bottom: 20px;">
+                                <input type="text" id="input-clone-list-name" placeholder="Name für die geklonte Liste..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <button id="btn-lists-clone" class="btn btn-small btn-secondary" style="width: 100%;">
+                                    <span>Aktuelle Liste klonen</span>
                                 </button>
-                                <button id="btn-import-list" class="btn btn-small btn-secondary" style="flex: 1;" title="Profile aus einer Bluesky Liste laden und markieren">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
-                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z"/>
-                                    </svg>
-                                    <span>Aus Liste importieren</span>
+                            </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Zusammenführen (Merge)</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label for="select-user-lists-secondary" style="font-size: 0.8rem;">Mit dieser Liste zusammenführen</label>
+                                    <select id="select-user-lists-secondary" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                        <option value="" disabled selected>Wähle zweite Liste...</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="input-merge-list-name" placeholder="Name für neue merged Liste..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <button id="btn-lists-merge" class="btn btn-small btn-secondary" style="width: 100%;">
+                                    <span>Beide Listen zusammenführen</span>
                                 </button>
                             </div>
                         </div>
-                        <div class="warning-box" style="margin-top: 15px; text-align: left;">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: var(--warning); margin-top: 2px;">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                                <line x1="12" y1="9" x2="12" y2="13"></line>
-                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                            </svg>
-                            <span>
-                                <strong>Verzögerung bei Drittanbieter-PDS (z.B. eigene PDS-Instanzen):</strong> Wenn dein PDS-Server eine Synchronisationsverzögerung zum Bluesky-Relay hat, kann es eine Weile dauern, bis aufgehobene Blocks in der offiziellen App (bsky.app) als entblockt angezeigt werden. Die Löschung wird jedoch sofort auf deinem eigenen PDS-Server durchgeführt und verifiziert.
-                            </span>
+                    </div>
+
+                    <!-- List Members Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2 id="list-members-title">Mitglieder der Liste</h2>
+                            <span class="badge" id="lists-visible-count-badge">0 geladen</span>
+                        </div>
+                        <div id="loading-lists" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Lade Listenmitglieder... Bitte warten.</p>
+                        </div>
+                        <div id="empty-lists" class="empty-state">
+                            <p>Wähle eine Liste aus und klicke auf "Mitglieder anzeigen".</p>
+                        </div>
+                        <div id="lists-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 7: TIMELINE SIFTER -->
+                <div id="tab-timeline" class="tab-content hidden fade-in">
+                    <div class="dashboard-grid">
+                        <!-- Feed Selection & Analysis Control Card -->
+                        <div class="card stats-card fade-in">
+                            <h3>Timeline-Optionen</h3>
+                            <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
+                                Analysiere deinen Home-Feed oder eigene Beiträge, um Accounts zu finden, die deine Timeline mit Reposts oder Zitaten überfluten.
+                            </p>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="select-feed-source">Feed-Quelle</label>
+                                <select id="select-feed-source" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                    <option value="timeline" selected>Home-Timeline (Neueste Posts)</option>
+                                    <option value="author">Eigene Beiträge (Interaktions-Check)</option>
+                                </select>
+                            </div>
+                            <button type="button" id="btn-analyze-feed" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                                <span>Feed analysieren</span>
+                                <span class="spinner hidden"></span>
+                            </button>
+
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-timeline-reposts">0%</span>
+                                    <span class="stat-label">Repost-Anteil</span>
+                                </div>
+                                <div class="stat-item warning">
+                                    <span class="stat-value" id="stat-timeline-heavy-reposters">0</span>
+                                    <span class="stat-label">Viel-Reposter</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="stat-timeline-selected">0</span>
+                                    <span class="stat-label">Ausgewählt</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions & Filters Card -->
+                        <div class="card action-card fade-in">
+                            <h3>Aktionen & Filter</h3>
+                            <div class="filter-actions">
+                                <div class="filter-options-row">
+                                    <select id="select-timeline-filter" title="Nach Aktivitäts-Typ filtern" style="width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                        <option value="all" selected>Alle Accounts anzeigen</option>
+                                        <option value="heavy-reposts">Mehr als 50% Reposts</option>
+                                        <option value="quotes">Accounts mit Zitaten (Quotes)</option>
+                                    </select>
+                                </div>
+                                <div class="selection-buttons" style="margin-top: 10px;">
+                                    <button id="btn-timeline-select-all" class="btn btn-small btn-secondary">Alle</button>
+                                    <button id="btn-timeline-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
+                                </div>
+                            </div>
+                            <div class="action-buttons-group" style="margin-top: 15px;">
+                                <button id="btn-timeline-mute-selected" class="btn btn-danger-action btn-large">
+                                    <span>Ausgewählte stummschalten (Mute)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Actors Card -->
+                    <div class="card list-card fade-in" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h2>Timeline-Aktivität nach Benutzer</h2>
+                            <span class="badge" id="timeline-visible-count-badge">0 geladen</span>
+                        </div>
+                        <div id="loading-timeline" class="loading-state hidden">
+                            <span class="spinner-large"></span>
+                            <p>Analysiere Timeline-Beiträge... Bitte warten.</p>
+                        </div>
+                        <div id="empty-timeline" class="empty-state">
+                            <p>Klicke auf "Feed analysieren", um die Timeline-Aktivität einzulesen.</p>
+                        </div>
+                        <div id="timeline-list-grid" class="block-grid hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 8: VERLAUF & WHITELIST -->
+                <div id="tab-history" class="tab-content hidden fade-in">
+                    <div class="history-layout">
+                        <!-- Left Column: Smart Whitelist -->
+                        <div class="card fade-in" style="display: flex; flex-direction: column; gap: 15px;">
+                            <h3>🛡️ Whitelist-Manager</h3>
+                            <p class="info-text" style="font-size: 0.9rem;">
+                                Die Whitelist schützt Accounts davor, durch automatisierte Massen-Aktionen (z.B. Massen-Entblockung, Soft-Blocks) verändert zu werden.
+                            </p>
+                            
+                            <div style="background: rgba(0, 0, 0, 0.15); border: 1px solid var(--card-border); padding: 15px; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 10px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0;">Smart Whitelist Generator</h4>
+                                <p class="info-text" style="font-size: 0.8rem; margin-bottom: 5px;">
+                                    Analysiert deine Interaktionen (Erwähnungen, Antworten), um aktive Kontakte automatisch zu schützen.
+                                </p>
+                                <button type="button" id="btn-generate-smart-whitelist" class="btn btn-primary" style="width: 100%;">
+                                    <span>Smart Whitelist generieren</span>
+                                    <span class="spinner hidden"></span>
+                                </button>
+                            </div>
+
+                            <form id="add-whitelist-form" style="display: flex; gap: 8px;">
+                                <input type="text" id="input-whitelist-actor" required placeholder="Handle oder DID eintragen..." style="flex: 1; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 10px 14px;">
+                                <button type="submit" class="btn btn-secondary" style="padding: 10px 16px;">Hinzufügen</button>
+                            </form>
+
+                            <div class="whitelist-list-container" style="margin-top: 10px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Geschützte Profile</h4>
+                                <div id="whitelist-empty-state" class="info-text-small" style="color: var(--text-muted); text-align: center; padding: 20px 0;">Keine Profile auf der Whitelist.</div>
+                                <div id="whitelist-items-list" class="whitelist-list hidden">
+                                    <!-- Dynamic Whitelist entries -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Action History & Undo -->
+                        <div class="card fade-in" style="display: flex; flex-direction: column; gap: 15px;">
+                            <h3>📜 Massen-Aktions-Verlauf & Rollback</h3>
+                            <p class="info-text" style="font-size: 0.9rem;">
+                                Hier siehst du deine letzten Massen-Aktionen (z.B. Massen-Entblockungen, Soft-Blocks oder Massen-Folgen). Du kannst Aktionen rückgängig machen (Rollback).
+                            </p>
+                            
+                            <div class="history-list-container" style="margin-top: 5px;">
+                                <div id="history-empty-state" class="info-text-small" style="color: var(--text-muted); text-align: center; padding: 40px 0;">Noch keine Aktionen in dieser Sitzung durchgeführt.</div>
+                                <div id="undo-history-list" class="undo-history-list hidden">
+                                    <!-- Dynamic Action History entries -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Blocklist Section -->
-                <div class="card list-card fade-in">
-                    <div class="card-header-flex">
-                        <h2>Blockierte Konten</h2>
-                        <div class="header-actions-group">
-                            <span class="badge" id="visible-count-badge">0 geladen</span>
-                            <button id="btn-rescan" class="btn btn-small btn-secondary" title="Blockliste neu laden und verifizieren">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="rescan-icon" style="margin-right: 4px; vertical-align: middle;">
-                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                                </svg>
-                                <span>Erneut scannen</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="loading-blocks" class="loading-state">
-                        <span class="spinner-large"></span>
-                        <p>Lade Blockliste herunter... Bitte warten.</p>
-                        <p class="sub-loading-text" id="loading-cursor-text">Hole Datensätze...</p>
-                    </div>
-
-                    <div id="empty-blocks" class="empty-state hidden">
-                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p>Keine blockierten Konten gefunden!</p>
-                    </div>
-
-                    <!-- Blocklist Grid -->
-                    <div id="block-list-grid" class="block-grid hidden"></div>
-                </div>
 
                 <!-- Console Logs Terminal -->
                 <div class="card terminal-card fade-in">
@@ -323,7 +976,7 @@
         </main>
 
         <footer class="app-footer">
-            <p>Bluesky Block-Entferner &copy; 2026. Dieses Tool läuft vollständig lokal in deinem Browser. Keine Passwörter oder Daten werden an Drittserver übertragen.</p>
+            <p>C.T.H.U.L.H.U. &copy; 2026. Dieses Tool läuft vollständig lokal in deinem Browser. Keine Passwörter oder Daten werden an Drittserver übertragen.</p>
         </footer>
     </div>
     

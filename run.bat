@@ -1,7 +1,7 @@
 @echo off
-title Bluesky Block-Entferner
+title C.T.H.U.L.H.U.
 echo ==================================================
-echo   Starte Bluesky Block-Entferner Server...
+echo   Starte C.T.H.U.L.H.U. Server...
 echo ==================================================
 echo.
 

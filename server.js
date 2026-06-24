@@ -49,7 +49,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
     console.log(`==================================================`);
-    console.log(` Bluesky Block-Entferner Server läuft!`);
+    console.log(` C.T.H.U.L.H.U. Server läuft!`);
     console.log(` Adresse: http://localhost:${PORT}`);
     console.log(` Beenden mit: CTRL + C in diesem Terminal`);
     console.log(`==================================================`);
