@@ -4170,7 +4170,7 @@ function renderGhostFollowers() {
         const card = document.createElement('div');
         let statusClass = user.status;
         if (user.status === 'unfollowed') statusClass = 'inactive';
-        card.className = `block-item fade-in ${statusClass}`;
+        card.className = `ghost-card fade-in ${statusClass}`;
         
         let relationLabel = 'Folgt dir';
         let badgeClass = 'block-status-badge follower';
@@ -4195,45 +4195,41 @@ function renderGhostFollowers() {
         const isZombie = !isBot && details.postsCount > 0 && details.followsCount > 500 && details.followersCount < 30 && (details.followsCount / Math.max(1, details.followersCount)) > 8;
         
         if (isBot) {
-            qualityBadgeHtml = `<span class="block-status-badge spambot" title="Verdacht auf Spam-Bot">⚠️ Bot?</span>`;
+            qualityBadgeHtml = `<span class="quality-badge spambot">⚠️ Bot?</span>`;
         } else if (isZombie) {
-            qualityBadgeHtml = `<span class="block-status-badge zombie" title="Zombie-Verdacht (inaktiv gewesen, jetzt Massen-Folgen)">🧟 Zombie?</span>`;
+            qualityBadgeHtml = `<span class="quality-badge zombie">🧟 Zombie?</span>`;
         } else if (details.postsCount === 0) {
-            qualityBadgeHtml = `<span class="block-status-badge inactive" title="Inaktiv">💤 Inaktiv</span>`;
+            qualityBadgeHtml = `<span class="quality-badge inactive">💤 Inaktiv</span>`;
         }
         
-        const bioHtml = details.description ? `<div class="follower-bio" title="${details.description}">${details.description}</div>` : '';
-        const statsHtml = `
-            <div class="follower-stats">
-                <span>📝 ${details.postsCount || 0} Posts</span>
-                <span>👤 ${details.followersCount || 0} Follower</span>
-            </div>
-        `;
+        const bioHtml = details.description ? `<div class="ghost-card-bio" title="${details.description}">${details.description}</div>` : '';
         
         const avatarSrc = user.avatar || '';
         const avatarEl = avatarSrc 
-            ? `<img src="${avatarSrc}" alt="Avatar" class="block-avatar" onerror="this.src=''; this.className='avatar-placeholder'">`
-            : `<div class="block-avatar avatar-placeholder"></div>`;
+            ? `<img src="${avatarSrc}" alt="Avatar" class="ghost-card-avatar" onerror="this.src=''; this.className='ghost-card-avatar ghost-card-avatar-placeholder'">`
+            : `<div class="ghost-card-avatar ghost-card-avatar-placeholder"></div>`;
             
         const isInteractive = user.status !== 'unfollowed';
+        const isZombieSelected = isZombie && user.selected;
+        if (isZombie && user.selected) card.classList.add('ghost-zombie-selected');
+        if (isBot) card.classList.add('ghost-bot-card');
         
         card.innerHTML = `
-            <label class="checkbox-container">
-                <input type="checkbox" ${user.selected && isInteractive ? 'checked' : ''} ${isInteractive ? '' : 'disabled'} data-did="${user.did}">
-                <span class="checkmark"></span>
-            </label>
-            ${avatarEl}
-            <div class="follower-item-detail">
-                <div class="block-name" title="${user.displayName}">${user.displayName}</div>
-                <div class="block-handle">
-                    <a href="https://bsky.app/profile/${user.handle}" target="_blank" rel="noopener noreferrer">@${user.handle}</a>
-                </div>
-                ${bioHtml}
-                ${statsHtml}
-                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                    <span class="${badgeClass}">${relationLabel}</span>
-                    ${qualityBadgeHtml}
-                </div>
+            <div class="ghost-card-avatar-wrap">
+                ${avatarEl}
+            </div>
+            <div class="ghost-card-badge-wrap">
+                ${qualityBadgeHtml}
+            </div>
+            <div class="ghost-card-handle">${user.handle}</div>
+            <div class="ghost-card-followers"><strong>${details.followersCount || 0}</strong> Followern</div>
+            ${bioHtml}
+            <div class="ghost-card-footer">
+                <span class="ghost-card-status">${user.status === 'unfollowed' ? 'Bereinigt ✓' : 'Aktiv'}</span>
+                <label class="ghost-checkbox-container">
+                    <input type="checkbox" ${user.selected && isInteractive ? 'checked' : ''} ${isInteractive ? '' : 'disabled'} data-did="${user.did}">
+                    <span class="ghost-checkmark"></span>
+                </label>
             </div>
         `;
         
@@ -5841,7 +5837,7 @@ function renderTimelineActors() {
         const card = document.createElement('div');
         let statusClass = user.status;
         if (user.status === 'muted') statusClass = 'inactive';
-        card.className = `block-item fade-in ${statusClass}`;
+        card.className = `tl-card fade-in ${statusClass}`;
         
         let relationLabel = 'Keine';
         let badgeClass = 'block-status-badge none';
@@ -5871,44 +5867,31 @@ function renderTimelineActors() {
         const bioHtml = details.description ? `<div class="follower-bio" title="${details.description}">${details.description}</div>` : '';
         
         const repostPct = Math.round((user.repostCount / user.postsCount) * 100);
-        let repostBadge = '';
-        if (repostPct >= 75) {
-            repostBadge = `<span class="block-status-badge spambot" style="margin-top: 3px;">🔄 ${repostPct}% Reposts</span>`;
-        } else if (repostPct >= 50) {
-            repostBadge = `<span class="block-status-badge warning" style="margin-top: 3px; background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.2);">🔄 ${repostPct}% Reposts</span>`;
-        } else {
-            repostBadge = `<span class="block-status-badge none" style="margin-top: 3px;">🔄 ${repostPct}% Reposts</span>`;
-        }
+        const repostBarWidth = Math.min(100, repostPct);
+        const repostBarColor = repostPct >= 75 ? '#ef4444' : repostPct >= 50 ? '#f59e0b' : '#10b981';
         
-        let quoteBadge = user.quoteCount > 0 ? `<span class="block-status-badge follower" style="margin-top: 3px; background: rgba(139, 92, 246, 0.1); color: #c084fc; border-color: rgba(139, 92, 246, 0.2);">💬 ${user.quoteCount} Zitate</span>` : '';
-        
-        const avatarSrc = user.avatar || '';
-        const avatarEl = avatarSrc 
-            ? `<img src="${avatarSrc}" alt="Avatar" class="block-avatar" onerror="this.src=''; this.className='avatar-placeholder'">`
-            : `<div class="block-avatar avatar-placeholder"></div>`;
-            
         const isInteractive = user.status !== 'muted' && user.relation !== 'blocked';
         
+        const quoteInfo = user.quoteCount > 0 
+            ? `<div class="tl-post-count">${user.quoteCount}/${user.postsCount} Quote-Posts</div>` 
+            : `<div class="tl-post-count">${user.repostCount}/${user.postsCount} Posts sind Reposts
+               <span class="tl-repost-pct" style="color:${repostBarColor}">${repostPct}%</span></div>
+               <div class="tl-progress-bar-wrap"><div class="tl-progress-bar" style="width:${repostBarWidth}%; background:${repostBarColor}"></div></div>`;
+        
         card.innerHTML = `
-            <label class="checkbox-container">
-                <input type="checkbox" ${user.selected && isInteractive ? 'checked' : ''} ${isInteractive ? '' : 'disabled'} data-did="${user.did}">
-                <span class="checkmark"></span>
-            </label>
-            ${avatarEl}
-            <div class="follower-item-detail">
-                <div class="block-name" title="${user.displayName}">${user.displayName}</div>
-                <div class="block-handle">
-                    <a href="https://bsky.app/profile/${user.handle}" target="_blank" rel="noopener noreferrer">@${user.handle}</a>
+            <div class="tl-card-header">
+                <div class="tl-card-name-block">
+                    <div class="tl-card-name">${user.displayName}</div>
+                    <div class="tl-card-handle">(${user.handle})</div>
                 </div>
-                ${bioHtml}
-                <div class="follower-stats" style="margin-top: 3px;">
-                    <span>📊 In Feed: ${user.postsCount} Beiträge</span>
-                </div>
-                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                    <span class="${badgeClass}">${relationLabel}</span>
-                    ${repostBadge}
-                    ${quoteBadge}
-                </div>
+                <label class="tl-checkbox-label">
+                    <input type="checkbox" class="tl-checkbox" ${user.selected && isInteractive ? 'checked' : ''} ${isInteractive ? '' : 'disabled'} data-did="${user.did}">
+                </label>
+            </div>
+            ${quoteInfo}
+            <div class="tl-relation-row">
+                <span class="tl-relation-badge tl-relation-${user.relation}">${relationLabel}</span>
+                ${user.status === 'muted' ? '<span class="tl-relation-badge tl-relation-muted">Stumm ✓</span>' : ''}
             </div>
         `;
         

@@ -648,11 +648,6 @@
                                     <button id="btn-ghosts-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
                                 </div>
                             </div>
-                            <div class="action-buttons-group" style="margin-top: 20px;">
-                                <button id="btn-ghosts-softblock-selected" class="btn btn-danger-action btn-large" style="width: 100%;">
-                                    <span>Ausgewählte per Soft-Block entfernen</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
 
@@ -669,7 +664,13 @@
                         <div id="empty-ghosts" class="empty-state">
                             <p>Klicke auf "Follower-Audit starten", um deine Follower auf Inaktivität und Spam-Aktivität zu durchsuchen.</p>
                         </div>
-                        <div id="ghosts-list-grid" class="block-grid hidden"></div>
+                        <div id="ghosts-list-grid" class="ghost-grid hidden"></div>
+                        
+                        <div class="ghosts-action-footer" style="display: flex; justify-content: center; margin-top: 25px; border-top: 1px solid var(--card-border); padding-top: 20px;">
+                            <button id="btn-ghosts-softblock-selected" class="btn btn-danger-action btn-large" style="max-width: 400px; width: 100%;">
+                                <span>Ausgewählte per Soft-Block entfernen</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -884,11 +885,6 @@
                                     <button id="btn-timeline-deselect-all" class="btn btn-small btn-secondary">Aufheben</button>
                                 </div>
                             </div>
-                            <div class="action-buttons-group" style="margin-top: 15px;">
-                                <button id="btn-timeline-mute-selected" class="btn btn-danger-action btn-large">
-                                    <span>Ausgewählte stummschalten (Mute)</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
 
@@ -905,7 +901,13 @@
                         <div id="empty-timeline" class="empty-state">
                             <p>Klicke auf "Feed analysieren", um die Timeline-Aktivität einzulesen.</p>
                         </div>
-                        <div id="timeline-list-grid" class="block-grid hidden"></div>
+                        <div id="timeline-list-grid" class="tl-grid hidden"></div>
+                        
+                        <div class="timeline-action-footer" style="display: flex; justify-content: center; margin-top: 25px; border-top: 1px solid var(--card-border); padding-top: 20px;">
+                            <button id="btn-timeline-mute-selected" class="btn btn-primary btn-large" style="max-width: 400px; width: 100%;">
+                                <span>Ausgewählte stummschalten (Mute)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

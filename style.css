@@ -1575,5 +1575,553 @@ input[type="url"]:focus {
     color: var(--text-muted);
 }
 
+/* ===== MOCKUP REDESIGN v1.3.0 ===== */
+
+/* ── Tab 4: Geister-Auditor Redesign ── */
+
+/* 1. Large stat cards with thick colored borders */
+#tab-ghosts .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+#tab-ghosts .stat-item {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: var(--radius-lg);
+    padding: 24px 16px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid transparent;
+    transition: var(--transition);
+    box-shadow: var(--shadow-lg);
+}
+
+#tab-ghosts .stat-value {
+    font-size: 3rem;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    line-height: 1;
+}
+
+#tab-ghosts .stat-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+/* Specific category styles for ghost stats */
+#tab-ghosts .stats-grid .stat-item:nth-child(1) {
+    border-color: rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(239,68,68,0.1);
+}
+#tab-ghosts .stats-grid .stat-item:nth-child(1) .stat-value,
+#tab-ghosts .stats-grid .stat-item:nth-child(1) .stat-label {
+    color: #ef4444;
+}
+
+#tab-ghosts .stats-grid .stat-item:nth-child(2) {
+    border-color: rgba(132, 204, 22, 0.7);
+    box-shadow: 0 0 18px rgba(132, 204, 22, 0.15), inset 0 1px 0 rgba(132,204,22,0.1);
+}
+#tab-ghosts .stats-grid .stat-item:nth-child(2) .stat-value,
+#tab-ghosts .stats-grid .stat-item:nth-child(2) .stat-label {
+    color: #a3e635;
+}
+
+#tab-ghosts .stats-grid .stat-item:nth-child(3) {
+    border-color: rgba(100, 116, 139, 0.5);
+    box-shadow: 0 0 18px rgba(100, 116, 139, 0.1);
+}
+#tab-ghosts .stats-grid .stat-item:nth-child(3) .stat-value,
+#tab-ghosts .stats-grid .stat-item:nth-child(3) .stat-label {
+    color: var(--text-secondary);
+}
+
+#tab-ghosts .stats-grid .stat-item:nth-child(4) {
+    border-color: rgba(0, 133, 255, 0.7);
+    box-shadow: 0 0 18px rgba(0, 133, 255, 0.15), inset 0 1px 0 rgba(0,133,255,0.1);
+}
+#tab-ghosts .stats-grid .stat-item:nth-child(4) .stat-value,
+#tab-ghosts .stats-grid .stat-item:nth-child(4) .stat-label {
+    color: var(--primary-hover);
+}
+
+/* 2. Portrait Ghost Cards Grid */
+.ghost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding: 10px 5px;
+}
+
+.ghost-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.ghost-card:hover {
+    transform: translateY(-4px);
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.ghost-card-avatar-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 14px;
+}
+
+.ghost-card-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid var(--card-border);
+    background: #1e293b;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.ghost-card-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+    border: 2.5px solid var(--card-border);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.ghost-card-badge-wrap {
+    margin-bottom: 12px;
+}
+
+.quality-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.2px;
+}
+
+.quality-badge.spambot {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    text-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
+}
+
+.quality-badge.zombie {
+    background: rgba(132, 204, 22, 0.18);
+    color: #a3e635;
+    border: 1px solid rgba(132, 204, 22, 0.35);
+    text-shadow: 0 0 6px rgba(132, 204, 22, 0.3);
+}
+
+.quality-badge.inactive {
+    background: rgba(100, 116, 139, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.ghost-card-handle {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-all;
+    margin-bottom: 6px;
+    opacity: 0.95;
+}
+
+.ghost-card-followers {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.ghost-card-followers strong {
+    color: var(--text-secondary);
+}
+
+.ghost-card-bio {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.85;
+    line-height: 1.4;
+    margin-bottom: 18px;
+    min-height: 38px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.ghost-card-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--card-border);
+    padding-top: 12px;
+    margin-top: auto;
+}
+
+.ghost-card-status {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Card Glow effects when selected */
+.ghost-card.ghost-zombie-selected {
+    border-color: rgba(132, 204, 22, 0.75) !important;
+    box-shadow: 0 0 18px rgba(132, 204, 22, 0.28) !important;
+}
+
+.ghost-card.ghost-bot-card.selected {
+    border-color: rgba(239, 68, 68, 0.75) !important;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.28) !important;
+}
+
+.ghost-card.selected {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 18px var(--primary-glow) !important;
+}
+
+.ghost-checkbox-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ghost-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.ghost-checkmark {
+    height: 20px;
+    width: 20px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.ghost-checkbox-container:hover input ~ .ghost-checkmark {
+    border-color: var(--primary-hover);
+}
+
+.ghost-checkbox-container input:checked ~ .ghost-checkmark {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.ghost-checkmark:after {
+    content: "";
+    display: none;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.ghost-checkbox-container input:checked ~ .ghost-checkmark:after {
+    display: block;
+}
 
 
+/* ── Tab 8: Verlauf & Whitelist Redesign ── */
+
+/* Whitelist generator cyan glow button */
+#btn-generate-smart-whitelist {
+    background: linear-gradient(135deg, #0085ff 0%, #06b6d4 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.35);
+    border-radius: 30px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    transition: var(--transition);
+}
+
+#btn-generate-smart-whitelist:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #0891b2 100%);
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.55);
+    transform: translateY(-1px);
+}
+
+/* Whitelist removal button in teal */
+.btn-whitelist-remove {
+    background: rgba(20, 184, 166, 0.12) !important;
+    color: #2dd4bf !important;
+    border: 1px solid rgba(20, 184, 166, 0.35) !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 6px 12px !important;
+    transition: var(--transition) !important;
+    cursor: pointer;
+}
+
+.btn-whitelist-remove:hover {
+    background: rgba(20, 184, 166, 0.28) !important;
+    color: white !important;
+    border-color: #2dd4bf !important;
+}
+
+/* Undo item full width orange button */
+.undo-item {
+    background: rgba(15, 23, 42, 0.55) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 20px !important;
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-undo-rollback {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+    color: white !important;
+    border: none !important;
+    width: 100% !important;
+    padding: 12px !important;
+    font-weight: 700 !important;
+    border-radius: var(--radius-sm) !important;
+    margin-top: 12px !important;
+    cursor: pointer;
+    transition: var(--transition) !important;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3) !important;
+    letter-spacing: 0.2px;
+}
+
+.btn-undo-rollback:hover {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.48) !important;
+    transform: translateY(-1px);
+}
+
+
+/* ── Tab 7: Timeline-Filter Redesign ── */
+
+/* Glassmorphism row stats badges */
+#tab-timeline .stats-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 12px !important;
+    margin-top: 18px !important;
+    margin-bottom: 5px !important;
+}
+
+#tab-timeline .stat-item {
+    flex: 1 1 140px;
+    background: rgba(15, 23, 42, 0.5) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 40px !important; /* pill shape */
+    padding: 10px 18px !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-shadow: var(--shadow-lg);
+}
+
+#tab-timeline .stat-value {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: var(--text-primary) !important;
+}
+
+#tab-timeline .stat-label {
+    font-size: 0.75rem !important;
+    text-transform: none !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0 !important;
+}
+
+/* User compact card grid */
+.tl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding: 10px 5px;
+}
+
+.tl-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.tl-card:hover {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.tl-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.tl-card-name-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tl-card-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-heading);
+}
+
+.tl-card-handle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tl-checkbox-label {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.tl-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.tl-post-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+.tl-repost-pct {
+    font-weight: 700;
+}
+
+.tl-progress-bar-wrap {
+    background: rgba(255, 255, 255, 0.05);
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.tl-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.tl-relation-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.tl-relation-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.tl-relation-blocked {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.tl-relation-mutual {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.tl-relation-following {
+    background: rgba(0, 133, 255, 0.15);
+    color: var(--primary-hover);
+    border-color: rgba(0, 133, 255, 0.3);
+}
+
+.tl-relation-follower {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c084fc;
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.tl-relation-none {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border-color: var(--card-border);
+}
+
+.tl-relation-muted {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+    border-color: rgba(245, 158, 11, 0.3);
+}
