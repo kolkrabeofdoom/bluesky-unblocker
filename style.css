@@ -2127,3 +2127,113 @@ input[type="url"]:focus {
     color: var(--warning);
     border-color: rgba(245, 158, 11, 0.3);
 }
+
+
+/* ====== ELDRITCH THEME (angehängt) ====== */
+/* 1) Farb- & Schrift-Tokens überschreiben ----------------------- */
+:root {
+    --bg-gradient: radial-gradient(120% 90% at 50% -10%, #0a2a26 0%, #061714 45%, #030d0c 100%);
+    --card-bg: rgba(8, 24, 19, 0.60);
+    --card-border: rgba(94, 234, 212, 0.14);
+
+    --text-primary: #dcf5ee;
+    --text-secondary: #8fb8b1;
+    --text-muted: #5e8f87;
+
+    --primary: #8b5cf6;          /* Violett-Akzent */
+    --primary-hover: #a78bfa;
+    --primary-glow: rgba(139, 92, 246, 0.40);
+
+    --btn-danger: #e11d48;
+    --btn-danger-hover: #f43f5e;
+    --btn-danger-glow: rgba(244, 63, 94, 0.35);
+
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+
+    /* eigene Eldritch-Token */
+    --teal: #5eead4;
+    --eldritch-grad: linear-gradient(120deg, #5eead4, #b794f6);
+}
+
+/* 2) Hintergrund: tiefes Abyss-Grün ----------------------------- */
+body { background: #04100c; }
+.glass-bg { background: var(--bg-gradient); }
+
+/* Biolumineszenz-Orbs umfärben (Elemente existieren bereits) */
+.glass-bg::before { background: radial-gradient(circle, rgba(94,234,212,0.16), transparent 70%) !important; }
+.glass-bg::after  { background: radial-gradient(circle, rgba(167,139,250,0.14), transparent 70%) !important; }
+
+/* 3) Aktiver Tab + Primär-Buttons: Teal→Violett-Glow ------------ */
+.tab-btn.active {
+    color: #04130f !important;
+    background: var(--eldritch-grad) !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 24px rgba(94, 234, 212, 0.40) !important;
+}
+.btn-primary {
+    background: var(--eldritch-grad) !important;
+    color: #04130f !important;
+    box-shadow: 0 0 24px rgba(94, 234, 212, 0.30);
+}
+.btn-primary:hover:not(:disabled) {
+    box-shadow: 0 0 30px rgba(94, 234, 212, 0.50) !important;
+    filter: brightness(1.05);
+}
+
+/* 4) Statistik-Zahlen: glühendes Mono --------------------------- */
+.stat-value {
+    font-family: var(--font-mono);
+    text-shadow: 0 0 18px rgba(94, 234, 212, 0.30);
+}
+.stat-item.success .stat-value { color: var(--teal); text-shadow: 0 0 18px rgba(94,234,212,0.4); }
+
+/* 5) Karten-Überschriften: okkulte Mono-Labels "// …" ----------- */
+.stats-card h3, .action-card h3, .list-card h2, .card > h2, .card > h3 {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+}
+.stats-card h3::before, .action-card h3::before,
+.list-card h2::before, .card > h2::before, .card > h3::before {
+    content: "// ";
+    opacity: 0.6;
+}
+
+/* 6) Sigil-Ring um das Logo (siehe HTML-Snippet, Schritt 3) ------ */
+.logo-sigil {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.logo-sigil svg {
+    position: absolute;
+    inset: 0;
+    animation: sigil-spin 28s linear infinite;
+}
+.logo-sigil .logo {
+    position: relative;
+    width: 44px;
+    height: 44px;
+}
+.logo-sigil::after { /* innerer Glow-Puls */
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(94,234,212,0.5), transparent 70%);
+    filter: blur(8px);
+    animation: sigil-pulse 4s ease-in-out infinite;
+    z-index: 0;
+}
+@keyframes sigil-spin  { from { transform: rotate(0); }       to { transform: rotate(360deg); } }
+@keyframes sigil-pulse { 0%,100% { opacity: .55; }            50% { opacity: 1; } }
+
+/* Optional: Wortmarke mit Glow */
+.app-header h1 { letter-spacing: 2px; text-shadow: 0 0 24px rgba(94, 234, 212, 0.35); }

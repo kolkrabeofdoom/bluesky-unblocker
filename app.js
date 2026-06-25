@@ -2483,8 +2483,8 @@ async function fetchMyFollowsDetailed() {
         
         log(`Abonnements geladen: ${state.targetFollowers.length} Accounts.`, 'success');
         
-        // Enrich detailed profiles in batches of 25 (first 200)
-        const toEnrich = state.targetFollowers.slice(0, 200);
+        // Enrich detailed profiles in batches of 25 (alle laden)
+        const toEnrich = state.targetFollowers;
         if (toEnrich.length > 0) {
             await enrichFollowersWithProfiles(toEnrich);
         }
@@ -3686,7 +3686,7 @@ async function fetchOverlapFollowers() {
             if (intersectedDids.length === 0) {
                 state.overlapFollowers = [];
             } else {
-                const profiles = await fetchDetailedProfiles(intersectedDids.slice(0, 100)); // Cap at 100
+                const profiles = await fetchDetailedProfiles(intersectedDids); // Vergleiche alle Accounts (Cap aufgehoben)
                 
                 const blockedDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
                 
@@ -4079,7 +4079,7 @@ async function runGhostsAudit() {
             
             log(`${followerDids.length} Follower gefunden. Lade Profildetails...`, 'info');
             
-            const profiles = await fetchDetailedProfiles(followerDids.slice(0, 100)); // Limit to first 100
+            const profiles = await fetchDetailedProfiles(followerDids); // Alle Profiles laden
             
             profiles.forEach(p => {
                 state.detailedProfilesMap.set(p.did, {
@@ -4093,7 +4093,7 @@ async function runGhostsAudit() {
             
             const blockedDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
             
-            followerDids.slice(0, 100).forEach(did => {
+            followerDids.forEach(did => {
                 const profile = profiles.find(p => p.did === did);
                 if (!profile) return;
                 
