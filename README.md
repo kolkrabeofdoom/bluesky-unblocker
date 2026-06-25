@@ -9,7 +9,7 @@
 *Eine leistungsstarke, browserbasierte Suite zur Verwaltung von Bluesky-Konten*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.1-brightgreen.svg)](https://github.com/kolkrabeofdoom/C.T.H.U.L.H.U./releases)
+[![Version](https://img.shields.io/badge/version-1.3.2-brightgreen.svg)](https://github.com/kolkrabeofdoom/C.T.H.U.L.H.U./releases)
 [![Platform](https://img.shields.io/badge/platform-Bluesky%20%2F%20AT%20Protocol-0085ff.svg)](https://bsky.app)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-green.svg)](https://nodejs.org)
 
