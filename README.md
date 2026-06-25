@@ -1,6 +1,7 @@
 <div align="center">
 
 <img src="screenshots/logo.jpg" alt="C.T.H.U.L.H.U. Logo" width="160" style="border-radius: 50%;" />
+<p>...</p>
 <img src="screenshots/CthulhuforBluesky.png" alt="C.T.H.U.L.H.U. Features" width="500" style="border-radius: 50%;" />
 
 # C.T.H.U.L.H.U.
