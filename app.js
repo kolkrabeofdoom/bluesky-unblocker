@@ -296,7 +296,18 @@ const DOM = {
     whitelistEmptyState: document.getElementById('whitelist-empty-state'),
     whitelistItemsList: document.getElementById('whitelist-items-list'),
     historyEmptyState: document.getElementById('history-empty-state'),
-    undoHistoryList: document.getElementById('undo-history-list')
+    undoHistoryList: document.getElementById('undo-history-list'),
+
+    // New Feature UI Elements
+    checkboxGhostsInactivity: document.getElementById('checkbox-ghosts-inactivity'),
+    ghostsSearchInput: document.getElementById('ghosts-search-input'),
+    inputStarterpackName: document.getElementById('input-starterpack-name'),
+    inputStarterpackDesc: document.getElementById('input-starterpack-desc'),
+    btnListsCreateStarterpack: document.getElementById('btn-lists-create-starterpack'),
+    btnExportWhitelistJson: document.getElementById('btn-export-whitelist-json'),
+    btnExportWhitelistCsv: document.getElementById('btn-export-whitelist-csv'),
+    btnImportWhitelist: document.getElementById('btn-import-whitelist'),
+    inputWhitelistImport: document.getElementById('input-whitelist-import')
 };
 
 // --- UTILITIES ---
@@ -2579,7 +2590,10 @@ function getFilteredTargetFollowers() {
     const filterQuality = DOM.selectQualityFilter.value;
     
     return state.targetFollowers.filter(f => {
-        const matchesSearch = f.handle.toLowerCase().includes(query) || (f.displayName || '').toLowerCase().includes(query);
+        const details = state.detailedProfilesMap.get(f.did) || {};
+        const matchesSearch = f.handle.toLowerCase().includes(query) || 
+                              (f.displayName || '').toLowerCase().includes(query) ||
+                              (details.description || '').toLowerCase().includes(query);
         if (!matchesSearch) return false;
         
         // 1. Relationship filter
@@ -2595,8 +2609,7 @@ function getFilteredTargetFollowers() {
         // 2. Quality filter
         if (filterQuality === 'all') return true;
         
-        const details = state.detailedProfilesMap.get(f.did);
-        if (!details) return false; // Hide from quality filters if details not loaded
+        if (!details.did) return false; // Hide from quality filters if details not loaded
         
         const isBot = (details.postsCount === 0 && !f.avatar && !details.description) || 
                       (details.followsCount > 500 && details.followersCount < 50 && (details.followsCount / Math.max(1, details.followersCount)) > 5);
@@ -3774,9 +3787,12 @@ async function getActorFollowersList(did) {
 
 function getFilteredOverlapFollowers() {
     const query = DOM.overlapSearchInput.value.toLowerCase().trim();
-    return state.overlapFollowers.filter(f => 
-        f.handle.toLowerCase().includes(query) || (f.displayName || '').toLowerCase().includes(query)
-    );
+    return state.overlapFollowers.filter(f => {
+        const details = state.detailedProfilesMap.get(f.did) || {};
+        return f.handle.toLowerCase().includes(query) || 
+               (f.displayName || '').toLowerCase().includes(query) ||
+               (details.description || '').toLowerCase().includes(query);
+    });
 }
 
 function updateOverlapStats() {
@@ -3975,6 +3991,9 @@ async function processOverlapFollowQueue() {
 
 function initGhostsTab() {
     DOM.btnAnalyzeGhosts.addEventListener('click', runGhostsAudit);
+    if (DOM.ghostsSearchInput) {
+        DOM.ghostsSearchInput.addEventListener('input', renderGhostFollowers);
+    }
     
     DOM.btnGhostsSelectAll.addEventListener('click', () => {
         state.ghostFollowers.forEach(f => {
@@ -3995,6 +4014,56 @@ function initGhostsTab() {
     DOM.btnGhostsSoftblockSelected.addEventListener('click', startSoftBlockingFlow);
 }
 
+async function fetchLastPostDate(did) {
+    try {
+        const url = `${state.session.serverUrl}/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(did)}&limit=1`;
+        const data = await apiFetch(url);
+        if (data && data.feed && data.feed.length > 0) {
+            return data.feed[0].post.record.createdAt;
+        }
+    } catch (err) {
+        // Ignorieren
+    }
+    return null;
+}
+
+async function fetchLastPostDatesInParallel(dids, onProgress) {
+    const results = new Map();
+    const limit = 8;
+    let activeCount = 0;
+    let index = 0;
+    
+    return new Promise((resolve) => {
+        async function next() {
+            if (index >= dids.length) {
+                if (activeCount === 0) {
+                    resolve(results);
+                }
+                return;
+            }
+            
+            const currentIdx = index++;
+            const did = dids[currentIdx];
+            activeCount++;
+            
+            try {
+                const date = await fetchLastPostDate(did);
+                results.set(did, date);
+            } catch (err) {
+                results.set(did, null);
+            }
+            
+            activeCount--;
+            onProgress(results.size, dids.length);
+            next();
+        }
+        
+        for (let i = 0; i < Math.min(limit, dids.length); i++) {
+            next();
+        }
+    });
+}
+
 async function runGhostsAudit() {
     DOM.btnAnalyzeGhosts.disabled = true;
     DOM.btnAnalyzeGhosts.querySelector('.spinner').classList.remove('hidden');
@@ -4002,6 +4071,8 @@ async function runGhostsAudit() {
     DOM.emptyGhosts.classList.add('hidden');
     DOM.ghostsListGrid.classList.add('hidden');
     
+    if (DOM.ghostsSearchInput) DOM.ghostsSearchInput.value = '';
+    const checkInactivity = DOM.checkboxGhostsInactivity?.checked || false;
     log('Starte Follower-Audit...', 'system');
     
     try {
@@ -4024,8 +4095,15 @@ async function runGhostsAudit() {
                 let followers = 5;
                 let follows = 10;
                 let desc = 'Follower Bio';
+                let lastPost = null;
                 
-                if (f.did === 'did:plc:target3') {
+                if (f.did === 'did:plc:regular3') {
+                    lastPost = new Date().toISOString();
+                } else if (f.did === 'did:plc:zombie1') {
+                    lastPost = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                } else if (f.did === 'did:plc:target2') {
+                    lastPost = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(); // 120 days ago -> inactive
+                } else if (f.did === 'did:plc:target3') {
                     posts = 0;
                     followers = 5;
                     follows = 2000;
@@ -4035,11 +4113,6 @@ async function runGhostsAudit() {
                     followers = 5;
                     follows = 10;
                     desc = 'Inactive Bio';
-                } else if (f.did === 'did:plc:zombie1') {
-                    posts = 15;
-                    followers = 12;
-                    follows = 650;
-                    desc = 'Ehemals inaktiv, folgt nun in kurzer Zeit massenhaft Profilen.';
                 }
                 
                 const details = {
@@ -4047,7 +4120,8 @@ async function runGhostsAudit() {
                     description: desc,
                     postsCount: posts,
                     followersCount: followers,
-                    followsCount: follows
+                    followsCount: follows,
+                    lastPostDate: lastPost
                 };
                 state.detailedProfilesMap.set(f.did, details);
                 
@@ -4058,7 +4132,7 @@ async function runGhostsAudit() {
                     avatar: '',
                     relation: f.relation,
                     status: 'idle',
-                    selected: f.did === 'did:plc:target3' || f.did === 'did:plc:target4' || f.did === 'did:plc:zombie1'
+                    selected: f.did === 'did:plc:target3' || f.did === 'did:plc:target4' || f.did === 'did:plc:zombie1' || (checkInactivity && f.did === 'did:plc:target2')
                 };
             });
             
@@ -4104,6 +4178,27 @@ async function runGhostsAudit() {
                 });
             });
             
+            if (checkInactivity) {
+                const activeDidsToCheck = profiles.filter(p => p.postsCount > 0).map(p => p.did);
+                if (activeDidsToCheck.length > 0) {
+                    log(`Prüfe Aktivitätsdatum für ${activeDidsToCheck.length} aktive Profile...`, 'info');
+                    DOM.ghostsProgressContainer.classList.remove('hidden');
+                    const lastPostDates = await fetchLastPostDatesInParallel(activeDidsToCheck, (current, total) => {
+                        const pct = Math.round((current / total) * 100);
+                        DOM.ghostsProgressBar.style.width = `${pct}%`;
+                        DOM.ghostsProgressText.textContent = `Prüfe Aktivitätsdaten: ${current} / ${total} (${pct}%)`;
+                    });
+                    
+                    lastPostDates.forEach((date, did) => {
+                        const existing = state.detailedProfilesMap.get(did);
+                        if (existing) {
+                            existing.lastPostDate = date;
+                        }
+                    });
+                    DOM.ghostsProgressContainer.classList.add('hidden');
+                }
+            }
+            
             const blockedDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
             
             followerDids.forEach(did => {
@@ -4146,6 +4241,9 @@ function updateGhostsStats() {
     let inactive = 0;
     let selected = 0;
     
+    const checkInactivity = DOM.checkboxGhostsInactivity?.checked || false;
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    
     state.ghostFollowers.forEach(f => {
         const details = state.detailedProfilesMap.get(f.did);
         if (details) {
@@ -4153,9 +4251,11 @@ function updateGhostsStats() {
                           (details.followsCount > 500 && details.followersCount < 50 && (details.followsCount / Math.max(1, details.followersCount)) > 5);
             const isZombie = !isBot && details.postsCount > 0 && details.followsCount > 500 && details.followersCount < 30 && (details.followsCount / Math.max(1, details.followersCount)) > 8;
             
+            const isTimeInactive = checkInactivity && details.lastPostDate && (new Date(details.lastPostDate).getTime() < ninetyDaysAgo);
+            
             if (isBot) bots++;
             else if (isZombie) zombies++;
-            else if (details.postsCount === 0) inactive++;
+            else if (details.postsCount === 0 || isTimeInactive) inactive++;
         }
         if (f.selected) selected++;
     });
@@ -4166,11 +4266,25 @@ function updateGhostsStats() {
     DOM.statGhostsSelected.textContent = selected;
 }
 
+function getFilteredGhostFollowers() {
+    if (!DOM.ghostsSearchInput) return state.ghostFollowers;
+    const query = DOM.ghostsSearchInput.value.toLowerCase().trim();
+    if (!query) return state.ghostFollowers;
+    
+    return state.ghostFollowers.filter(f => {
+        const details = state.detailedProfilesMap.get(f.did) || {};
+        return f.handle.toLowerCase().includes(query) || 
+               (f.displayName || '').toLowerCase().includes(query) ||
+               (details.description || '').toLowerCase().includes(query);
+    });
+}
+
 function renderGhostFollowers() {
     DOM.ghostsListGrid.innerHTML = '';
-    DOM.ghostsVisibleCountBadge.textContent = `${state.ghostFollowers.length} geladen`;
+    const filtered = getFilteredGhostFollowers();
+    DOM.ghostsVisibleCountBadge.textContent = `${filtered.length} von ${state.ghostFollowers.length} angezeigt`;
     
-    if (state.ghostFollowers.length === 0) {
+    if (filtered.length === 0) {
         DOM.ghostsListGrid.classList.add('hidden');
         DOM.emptyGhosts.classList.remove('hidden');
         return;
@@ -4179,7 +4293,10 @@ function renderGhostFollowers() {
     DOM.emptyGhosts.classList.add('hidden');
     DOM.ghostsListGrid.classList.remove('hidden');
     
-    state.ghostFollowers.forEach(user => {
+    const checkInactivity = DOM.checkboxGhostsInactivity?.checked || false;
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    
+    filtered.forEach(user => {
         const card = document.createElement('div');
         let statusClass = user.status;
         if (user.status === 'unfollowed') statusClass = 'inactive';
@@ -4207,12 +4324,16 @@ function renderGhostFollowers() {
                       (details.followsCount > 500 && details.followersCount < 50 && (details.followsCount / Math.max(1, details.followersCount)) > 5);
         const isZombie = !isBot && details.postsCount > 0 && details.followsCount > 500 && details.followersCount < 30 && (details.followsCount / Math.max(1, details.followersCount)) > 8;
         
+        const isTimeInactive = checkInactivity && details.lastPostDate && (new Date(details.lastPostDate).getTime() < ninetyDaysAgo);
+        
         if (isBot) {
             qualityBadgeHtml = `<span class="quality-badge spambot">⚠️ Bot?</span>`;
         } else if (isZombie) {
             qualityBadgeHtml = `<span class="quality-badge zombie">🧟 Zombie?</span>`;
         } else if (details.postsCount === 0) {
             qualityBadgeHtml = `<span class="quality-badge inactive">💤 Inaktiv</span>`;
+        } else if (isTimeInactive) {
+            qualityBadgeHtml = `<span class="quality-badge inactive" style="background: rgba(147, 197, 253, 0.2); border-color: rgba(147, 197, 253, 0.4); color: #93c5fd;">💤 Inaktiv (>90 Tage)</span>`;
         }
         
         const bioHtml = details.description ? `<div class="ghost-card-bio" title="${details.description}">${details.description}</div>` : '';
@@ -4223,7 +4344,6 @@ function renderGhostFollowers() {
             : `<div class="ghost-card-avatar ghost-card-avatar-placeholder"></div>`;
             
         const isInteractive = user.status !== 'unfollowed';
-        const isZombieSelected = isZombie && user.selected;
         if (isZombie && user.selected) card.classList.add('ghost-zombie-selected');
         if (isBot) card.classList.add('ghost-bot-card');
         
@@ -4782,8 +4902,107 @@ function initListsTab() {
     DOM.btnLoadListMembers.addEventListener('click', fetchListMembers);
     DOM.btnListsClone.addEventListener('click', cloneSelectedList);
     DOM.btnListsMerge.addEventListener('click', mergeSelectedLists);
+    DOM.btnListsCreateStarterpack.addEventListener('click', createStarterpackFromSelectedList);
 }
-
+async function createStarterpackFromSelectedList() {
+    const packName = DOM.inputStarterpackName.value.trim();
+    const packDesc = DOM.inputStarterpackDesc.value.trim();
+    const listUri = DOM.selectUserListsPrimary.value;
+    
+    if (!listUri) {
+        alert('Bitte wähle zuerst eine primäre Liste im Dropdown oben aus!');
+        return;
+    }
+    if (!packName) {
+        alert('Bitte gib einen Namen für das Starter Pack ein!');
+        return;
+    }
+    
+    const members = [...state.selectedListMembers];
+    if (members.length === 0) {
+        alert('Die ausgewählte Liste hat keine Mitglieder.');
+        return;
+    }
+    
+    DOM.btnListsCreateStarterpack.disabled = true;
+    log(`Erstelle Starter Pack "${packName}"...`, 'system');
+    
+    try {
+        const isMock = state.session && state.session.did === 'did:plc:testuser123';
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            log(`[Mock] Starter Pack "${packName}" erfolgreich erstellt!`, 'success');
+            alert(`[Mock] Starter Pack "${packName}" wurde erfolgreich mit ${members.length} Mitgliedern erstellt!`);
+            DOM.inputStarterpackName.value = '';
+            DOM.inputStarterpackDesc.value = '';
+        } else {
+            log('Schritt 1: Erstelle Referenzliste...', 'info');
+            const createListRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    repo: state.session.did,
+                    collection: 'app.bsky.graph.list',
+                    record: {
+                        $type: 'app.bsky.graph.list',
+                        name: packName,
+                        purpose: 'app.bsky.graph.defs#referencelist',
+                        description: packDesc || 'Erstellt mit C.T.H.U.L.H.U.',
+                        createdAt: new Date().toISOString()
+                    }
+                })
+            });
+            const newListUri = createListRes.uri;
+            log(`Referenzliste erstellt: ${newListUri}. Füge Mitglieder hinzu...`, 'info');
+            
+            let count = 0;
+            for (const item of members) {
+                await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        repo: state.session.did,
+                        collection: 'app.bsky.graph.listitem',
+                        record: {
+                            $type: 'app.bsky.graph.listitem',
+                            subject: item.did,
+                            list: newListUri,
+                            createdAt: new Date().toISOString()
+                        }
+                    })
+                });
+                count++;
+                log(`Füge hinzu (${count}/${members.length}): @${item.handle}`, 'success');
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            log('Schritt 3: Erstelle Starter-Pack-Eintrag...', 'info');
+            await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    repo: state.session.did,
+                    collection: 'app.bsky.graph.starterpack',
+                    record: {
+                        $type: 'app.bsky.graph.starterpack',
+                        list: newListUri,
+                        name: packName,
+                        description: packDesc || '',
+                        createdAt: new Date().toISOString()
+                    }
+                })
+            });
+            
+            log(`Starter Pack "${packName}" erfolgreich erstellt!`, 'success');
+            alert(`Starter Pack "${packName}" wurde erfolgreich mit ${members.length} Mitgliedern auf deinem Bluesky-Profil erstellt.`);
+            DOM.inputStarterpackName.value = '';
+            DOM.inputStarterpackDesc.value = '';
+            fetchMyLists();
+        }
+    } catch (err) {
+        log(`Fehler beim Erstellen des Starter Packs: ${getErrorMessage(err)}`, 'error');
+        alert(`Fehler: ${getErrorMessage(err)}`);
+    } finally {
+        DOM.btnListsCreateStarterpack.disabled = false;
+    }
+}
 async function fetchMyLists() {
     if (!state.session) return;
     
@@ -5468,8 +5687,105 @@ function initWhitelistTab() {
     });
     
     DOM.btnGenerateSmartWhitelist.addEventListener('click', generateSmartWhitelist);
+    
+    // Backup export & import listeners
+    DOM.btnExportWhitelistJson.addEventListener('click', exportWhitelistJson);
+    DOM.btnExportWhitelistCsv.addEventListener('click', exportWhitelistCsv);
+    DOM.btnImportWhitelist.addEventListener('click', () => DOM.inputWhitelistImport.click());
+    DOM.inputWhitelistImport.addEventListener('change', importWhitelistFile);
+}
+function exportWhitelistJson() {
+    if (state.whitelist.size === 0) {
+        alert('Deine Whitelist ist aktuell leer.');
+        return;
+    }
+    const dataToExport = Array.from(state.whitelist);
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const handle = state.session ? state.session.handle : 'bluesky';
+    a.href = url;
+    a.download = `bluesky-whitelist-${handle}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    log(`Whitelist mit ${dataToExport.length} Konten erfolgreich als JSON exportiert.`, 'success');
 }
 
+function exportWhitelistCsv() {
+    if (state.whitelist.size === 0) {
+        alert('Deine Whitelist ist aktuell leer.');
+        return;
+    }
+    const csvContent = 'did\n' + Array.from(state.whitelist).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const handle = state.session ? state.session.handle : 'bluesky';
+    a.href = url;
+    a.download = `bluesky-whitelist-${handle}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    log(`Whitelist mit ${state.whitelist.size} Konten erfolgreich als CSV exportiert.`, 'success');
+}
+
+function importWhitelistFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const content = event.target.result.trim();
+            let importedDids = [];
+            
+            if (file.name.endsWith('.json')) {
+                const parsed = JSON.parse(content);
+                if (Array.isArray(parsed)) {
+                    importedDids = parsed.filter(item => typeof item === 'string' && item.startsWith('did:'));
+                } else {
+                    throw new Error('Ungültiges Format: Das JSON muss ein Array von DIDs sein.');
+                }
+            } else if (file.name.endsWith('.csv')) {
+                const lines = content.split('\n');
+                importedDids = lines
+                    .map(line => line.trim())
+                    .filter(line => line.startsWith('did:'));
+            }
+            
+            if (importedDids.length === 0) {
+                alert('Keine gültigen DIDs im importierten Backup gefunden.');
+                return;
+            }
+            
+            let addedCount = 0;
+            importedDids.forEach(did => {
+                if (!state.whitelist.has(did)) {
+                    state.whitelist.add(did);
+                    addedCount++;
+                }
+            });
+            
+            if (addedCount > 0) {
+                localStorage.setItem('unblocker_whitelist_' + state.session.did, JSON.stringify(Array.from(state.whitelist)));
+                renderWhitelist();
+                renderBlocklist();
+                log(`${addedCount} neue Konten erfolgreich in die Whitelist importiert. Whitelist enthält nun ${state.whitelist.size} Konten.`, 'success');
+                alert(`${addedCount} Konten erfolgreich importiert.`);
+            } else {
+                alert('Alle DIDs aus der Datei befinden sich bereits auf der Whitelist.');
+            }
+        } catch (err) {
+            log(`Fehler beim Importieren der Whitelist: ${err.message}`, 'error');
+            alert(`Importfehler: ${err.message}`);
+        }
+        DOM.inputWhitelistImport.value = '';
+    };
+    reader.readAsText(file);
+}
 async function addToWhitelist(actor) {
     if (!state.session) return;
     
@@ -5566,46 +5882,74 @@ function toggleWhitelist(did, handle) {
 }
 
 async function generateSmartWhitelist() {
-    if (!state.session) return;
-    
     DOM.btnGenerateSmartWhitelist.disabled = true;
     DOM.btnGenerateSmartWhitelist.querySelector('.spinner').classList.remove('hidden');
-    log('Analysiere deine Interaktionen für die Smart Whitelist...', 'system');
+    log('Analysiere deine Interaktionen & "Beste Freunde" für die Smart Whitelist...', 'system');
     
     try {
         const isMock = state.session.did === 'did:plc:testuser123';
         const suggestedDids = new Set();
         
         if (isMock) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 1000));
             suggestedDids.add('did:plc:protected1');
             suggestedDids.add('did:plc:regular3');
+            suggestedDids.add('did:plc:target2');
         } else {
-            const res = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.feed.getAuthorFeed?actor=${state.session.did}&limit=30`);
-            const feed = res.feed || [];
+            const interactionScores = new Map();
             
-            feed.forEach(item => {
-                if (item.reply) {
-                    if (item.reply.parent && item.reply.parent.author) {
-                        suggestedDids.add(item.reply.parent.author.did);
+            try {
+                log('Rufe deine letzten Benachrichtigungen ab...', 'info');
+                const notifUrl = `${state.session.serverUrl}/xrpc/app.bsky.notification.listNotifications?limit=80`;
+                const notifData = await apiFetch(notifUrl);
+                const notifications = notifData.notifications || [];
+                
+                notifications.forEach(n => {
+                    if (n.author && n.author.did !== state.session.did) {
+                        let score = 1;
+                        if (n.reason === 'reply') score = 3;
+                        else if (n.reason === 'mention') score = 4;
+                        
+                        interactionScores.set(n.author.did, (interactionScores.get(n.author.did) || 0) + score);
                     }
-                    if (item.reply.root && item.reply.root.author) {
-                        suggestedDids.add(item.reply.root.author.did);
-                    }
-                }
-                if (item.post && item.post.record && item.post.record.reply) {
-                    const parentUri = item.post.record.reply.parent?.uri;
-                    if (parentUri) {
-                        const parsedDid = parentUri.split('/')[2];
-                        if (parsedDid && parsedDid.startsWith('did:')) {
-                            suggestedDids.add(parsedDid);
+                });
+            } catch (notifErr) {
+                log(`Warnung: Benachrichtigungen konnten nicht analysiert werden (${getErrorMessage(notifErr)})`, 'warning');
+            }
+            
+            try {
+                log('Scanne deine eigenen Beiträge auf Gesprächspartner...', 'info');
+                const feedRes = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.feed.getAuthorFeed?actor=${state.session.did}&limit=30`);
+                const feed = feedRes.feed || [];
+                
+                feed.forEach(item => {
+                    if (item.reply) {
+                        if (item.reply.parent && item.reply.parent.author) {
+                            const did = item.reply.parent.author.did;
+                            if (did !== state.session.did) {
+                                interactionScores.set(did, (interactionScores.get(did) || 0) + 5);
+                            }
+                        }
+                        if (item.reply.root && item.reply.root.author) {
+                            const did = item.reply.root.author.did;
+                            if (did !== state.session.did) {
+                                interactionScores.set(did, (interactionScores.get(did) || 0) + 2);
+                            }
                         }
                     }
+                });
+            } catch (feedErr) {
+                log(`Warnung: Eigener Feed konnte nicht analysiert werden (${getErrorMessage(feedErr)})`, 'warning');
+            }
+            
+            interactionScores.forEach((score, did) => {
+                if (score >= 2) {
+                    suggestedDids.add(did);
                 }
             });
         }
         
-        log(`Smart Whitelist: ${suggestedDids.size} Gesprächspartner analysiert.`, 'info');
+        log(`Smart Whitelist: ${suggestedDids.size} aktive Gesprächspartner identifiziert.`, 'info');
         
         let addedCount = 0;
         suggestedDids.forEach(did => {
@@ -5617,13 +5961,13 @@ async function generateSmartWhitelist() {
         
         if (addedCount > 0) {
             localStorage.setItem('unblocker_whitelist_' + state.session.did, JSON.stringify(Array.from(state.whitelist)));
-            log(`${addedCount} neue vertrauenswürdige Accounts automatisch geschützt!`, 'success');
+            log(`${addedCount} neue aktive Kontakte („Beste Freunde“) erfolgreich geschützt!`, 'success');
             renderWhitelist();
             renderBlocklist();
-            alert(`Smart Whitelist: ${addedCount} neue Gesprächspartner wurden erfolgreich geschützt!`);
+            alert(`Smart Whitelist: ${addedCount} neue aktive Gesprächspartner wurden erfolgreich geschützt!`);
         } else {
-            log('Keine neuen Gesprächspartner gefunden, die nicht bereits geschützt sind.', 'info');
-            alert('Smart Whitelist: Deine Gesprächspartner sind bereits alle geschützt.');
+            log('Keine neuen Gesprächspartner gefunden, die nicht bereits auf der Whitelist sind.', 'info');
+            alert('Smart Whitelist: Deine aktiven Kontakte sind bereits alle geschützt.');
         }
         
     } catch (err) {

@@ -612,6 +612,12 @@
                             <p class="info-text" style="font-size: 0.9rem; margin-bottom: 15px;">
                                 Analysiere deine Follower, um Spam-Bots oder völlig inaktive Accounts zu identifizieren.
                             </p>
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="checkbox-ghosts-inactivity" style="width: auto; margin: 0;">
+                                <label for="checkbox-ghosts-inactivity" style="font-size: 0.85rem; cursor: pointer; color: var(--text-secondary);">
+                                    Zeitbasierte Inaktivitäts-Prüfung aktivieren (lädt letzten Beitrag)
+                                </label>
+                            </div>
                             <button type="button" id="btn-analyze-ghosts" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
                                 <span>Follower-Audit starten</span>
                                 <span class="spinner hidden"></span>
@@ -665,7 +671,10 @@
                     <div class="card list-card fade-in" style="margin-top: 25px;">
                         <div class="card-header-flex">
                             <h2>Auditiertes Follower-Verzeichnis</h2>
-                            <span class="badge" id="ghosts-visible-count-badge">0 geladen</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="ghosts-search-input" placeholder="Name, Handle oder Bio filtern..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 6px 12px; margin: 0; width: 220px;">
+                                <span class="badge" id="ghosts-visible-count-badge">0 geladen</span>
+                            </div>
                         </div>
                         <div id="loading-ghosts" class="loading-state hidden">
                             <span class="spinner-large"></span>
@@ -822,6 +831,15 @@
                                     <span>Beide Listen zusammenführen</span>
                                 </button>
                             </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 20px; margin-bottom: 10px;">Starter Pack erstellen</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <input type="text" id="input-starterpack-name" placeholder="Name des Starter Packs..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <input type="text" id="input-starterpack-desc" placeholder="Beschreibung (optional)..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <button id="btn-lists-create-starterpack" class="btn btn-small btn-secondary" style="width: 100%;">
+                                    <span>Starter Pack aus aktueller Liste erstellen</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -946,6 +964,16 @@
                                 <input type="text" id="input-whitelist-actor" required placeholder="Handle oder DID eintragen..." style="flex: 1; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 10px 14px;">
                                 <button type="submit" class="btn btn-secondary" style="padding: 10px 16px;">Hinzufügen</button>
                             </form>
+
+                            <div style="background: rgba(0, 0, 0, 0.15); border: 1px solid var(--card-border); padding: 15px; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 10px;">
+                                <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0;">Backup &amp; Export</h4>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" id="btn-export-whitelist-json" class="btn btn-small btn-secondary" style="flex: 1; font-size: 0.8rem;">Export JSON</button>
+                                    <button type="button" id="btn-export-whitelist-csv" class="btn btn-small btn-secondary" style="flex: 1; font-size: 0.8rem;">Export CSV</button>
+                                </div>
+                                <button type="button" id="btn-import-whitelist" class="btn btn-small btn-secondary" style="width: 100%; font-size: 0.8rem;">Importieren (JSON / CSV)</button>
+                                <input type="file" id="input-whitelist-import" class="hidden" accept=".json,.csv">
+                            </div>
 
                             <div class="whitelist-list-container" style="margin-top: 10px;">
                                 <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Geschützte Profile</h4>

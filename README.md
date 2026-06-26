@@ -28,13 +28,13 @@
 | Modul | Beschreibung |
 |---|---|
 | 🛡️ **Block-Entferner** | Massen-Entblockung von Benutzern mit Erkennung von Phantom-Einträgen, Whitelist-Schutz & Concurrency-Workern |
-| 👥 **Follower-Abgleich** | Vergleiche deine Follows/Follower, finde Nicht-Mutuals, führe Massen-Follows oder -Unfollows durch |
-| 🔍 **Überlappungs-Finder** | Finde gemeinsame Follower zwischen 2–3 Bluesky-Konten und folge der Schnittmenge im Batch |
-| 👻 **Geister-Auditor** | Überprüfe deine Follower-Liste auf Bots, inaktive Konten und Zombie-Profile |
+| 👥 **Follower-Abgleich** | Vergleiche deine Follows/Follower, finde Nicht-Mutuals, filtere Bios nach Keywords, führe Massen-Follows oder -Unfollows durch |
+| 🔍 **Überlappungs-Finder** | Finde gemeinsame Follower zwischen 2–3 Bluesky-Konten, filtere nach Bio-Keywords und folge der Schnittmenge im Batch |
+| 👻 **Geister-Auditor** | Überprüfe deine Follower-Liste auf Bots, inaktive Konten (inkl. zeitbasierter Inaktivität >90 Tage) und filtere nach Bio-Schlüsselwörtern |
 | 💬 **Interaktions-Auditor** | Scanne die Kommentare deiner letzten Beiträge auf Spam-Bots und Krypto-Scammer |
-| 🗂️ **Listen-Manager** | Durchsuche, klone und verschmelze deine Bluesky-Kurationslisten |
+| 🗂️ **Listen-Manager** | Durchsuche, klone, verschmelze deine Bluesky-Kurationslisten und erstelle Starter Packs im Handumdrehen |
 | 📺 **Timeline-Filter** | Analysiere deine Home-Timeline auf Heavy-Reposter und Zitat-Post-Spammer, um diese stummzuschalten |
-| 📜 **Verlauf & Whitelist** | Intelligenter Whitelist-Builder + komplettes Aktions-Undo-Log mit Ein-Klick-Rollback |
+| 📜 **Verlauf & Whitelist** | Intelligente „Beste Freunde“-Whitelist (Notification-Scan) + Backup (Export/Import) + Undo-Log |
 
 ---
 
@@ -138,8 +138,10 @@ Dreistufige Analyse der Follower-Qualität:
 | ⚠️ **Bot?** | 0 Beiträge + kein Profilbild/Bio, ODER Folgt-Anzahl > 500 mit einem Verhältnis von > 5× zu eigenen Followern |
 | 🧟 **Zombie?** | Hat Beiträge, aber Folgt-Anzahl > 500, Follower < 30, Verhältnis > 8× — ehemals inaktiv, nun Massen-Folgen |
 | 💤 **Inaktiv** | 0 Beiträge insgesamt |
+| 💤 **Inaktiv (>90 Tage)** | Letzter Beitrag liegt mehr als 90 Tage zurück (erfordert Aktivierung der zeitbasierten Inaktivitäts-Prüfung) |
 
-**Soft-Block**: Entfernt Geister-Accounts sauber aus deiner Follower-Liste. Es wird ein Block-Eintrag erstellt und sofort wieder gelöscht. Dies zwingt das Bluesky-System zu einem gegenseitigen Entfolgen, ohne dass eine permanente Blockierung bestehen bleibt.
+- **Bio- & Keyword-Suche**: Nutze die integrierte Suchleiste im Auditor-Verzeichnis, um Bios, Handles und Namen gezielt nach Begriffen wie „Crypto“, „Telegram“ oder Spam-Mustern zu filtern.
+- **Soft-Block**: Entfernt Geister-Accounts sauber aus deiner Follower-Liste. Es wird ein Block-Eintrag erstellt und sofort wieder gelöscht. Dies zwingt das Bluesky-System zu einem gegenseitigen Entfolgen, ohne dass eine permanente Blockierung bestehen bleibt.
 
 #### EPK-Prozessdiagramm (Ereignisgesteuerte Prozesskette)
 
@@ -183,6 +185,7 @@ Volle Kontrolle über deine Kurationslisten:
 - Betrachte die Listenmitglieder im gleichen Grid-Design.
 - **Liste klonen**: Dupliziere eine Liste unter neuem Namen.
 - **Listen verschmelzen**: Kombiniere zwei Listen zu einer einzigen, inklusive automatischer Deduplizierung.
+- **Starter Pack erstellen**: Generiert vollautomatisch ein offizielles Bluesky-Starter-Pack direkt auf deinem Profil aus den Mitgliedern der ausgewählten Liste (erzeugt die dafür benötigte Referenzliste auf dem PDS und verlinkt sie).
 
 ---
 
@@ -226,7 +229,8 @@ flowchart TD
 Verliere nie die Übersicht über deine Massenaktionen:
 
 **Intelligente Whitelist:**
-- Scanne deine letzten Beiträge nach Gesprächspartnern (Replies) und füge sie automatisch zur Whitelist hinzu.
+- **Beste Freunde & Interaktions-Scoring**: Der Generator analysiert deine letzten 80 Benachrichtigungen (Likes, Reposts, Mentions, Replies) sowie die Antworten unter deinen letzten 30 Beiträgen, berechnet einen Interaktions-Score (Reply=3, Mention=4, Direct Reply=5, Like/Follow/Repost=1) und whitelistet deine vertrauenswürdigsten Kontakte automatisch.
+- **Backup & Restore**: Exportiere deine Whitelist als JSON oder CSV und importiere Backups im Handumdrehen, um Einstellungen zwischen Accounts zu teilen.
 - Manuelle Eingabe: Füge beliebige Handles oder DIDs direkt zur Liste hinzu.
 - Speicherung im `localStorage` — überdauert das Schließen des Browsers.
 - Geschützte Accounts werden in allen anderen Tabs farblich hervorgehoben.
