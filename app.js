@@ -1978,8 +1978,21 @@ DOM.btnImportList.addEventListener('click', async () => {
     log(`Lade Konten aus Liste: ${listUri}...`, 'system');
     
     try {
-        const listData = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.getList?list=${listUri}&limit=100`);
-        const listItems = listData.items || [];
+        let cursor = '';
+        const listItems = [];
+        let listData = null;
+        do {
+            let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getList?list=${encodeURIComponent(listUri)}&limit=100`;
+            if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+            const res = await apiFetch(url);
+            if (!listData) {
+                listData = res;
+            }
+            if (res.items) {
+                listItems.push(...res.items);
+            }
+            cursor = res.cursor;
+        } while (cursor);
         
         if (listItems.length === 0) {
             log('Keine Einträge in der geladenen Liste gefunden.', 'warning');
@@ -4892,11 +4905,11 @@ async function fetchListMembers() {
             } while (cursor);
             
             const uniqueDids = items.map(it => it.subject.did);
-            const profiles = await fetchDetailedProfiles(uniqueDids.slice(0, 100));
+            const profiles = await fetchDetailedProfiles(uniqueDids);
             
             const blockedDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
             
-            state.selectedListMembers = items.slice(0, 100).map(item => {
+            state.selectedListMembers = items.map(item => {
                 const p = profiles.find(profile => profile.did === item.subject.did) || item.subject;
                 
                 let relation = 'none';
