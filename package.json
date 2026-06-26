@@ -1,0 +1,16 @@
+{
+  "name": "cthulhu",
+  "version": "1.3.2",
+  "description": "Bluesky Unblocker application (C.T.H.U.L.H.U.)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "bluesky",
+    "unblocker",
+    "cthulhu"
+  ],
+  "author": "kolkrabeofdoom",
+  "license": "MIT"
+}
