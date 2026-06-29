@@ -6415,17 +6415,18 @@ async function blockSingleUser() {
         
         const isMock = state.session.did === 'did:plc:testuser123';
         const targetDid = isMock 
-            ? (actor === 'protected-user.bsky.social' || actor === 'did:plc:protected1' ? 'did:plc:protected1' : 'did:plc:singleuser123') 
+            ? (actor === 'protected-user.bsky.social' || actor === 'did:plc:protected1' ? 'did:plc:protected1' : 
+               (actor === 'target-follower.bsky.social' || actor === 'did:plc:target2' ? 'did:plc:target2' : 'did:plc:singleuser123')) 
             : await resolveHandleOrDid(actor);
         const targetHandle = isMock ? actor : (actor.startsWith('did:') ? targetDid : actor);
         
-        // Strict mutual check
-        const isMutual = isMock 
-            ? (targetDid === 'did:plc:protected1')
-            : (state.myFollows.has(targetDid) && state.myFollowers.has(targetDid));
+        // Strict follower check (covers both mutuals and followers)
+        const isFollower = isMock 
+            ? (targetDid === 'did:plc:protected1' || targetDid === 'did:plc:target2')
+            : state.myFollowers.has(targetDid);
             
-        if (isMutual) {
-            throw new Error('Dieser Account ist ein Mutual (Gegenseitiges Abonnement) und kann nicht blockiert werden.');
+        if (isFollower) {
+            throw new Error('Dieser Account folgt dir (Follower oder Mutual) und kann nicht blockiert werden.');
         }
         
         if (!confirm(`Bist du sicher, dass du @${targetHandle} blockieren möchtest?`)) {
@@ -6895,7 +6896,7 @@ function renderBlockerCandidates() {
             relationLabel = 'Folge ich';
             badgeClass = 'block-status-badge following';
         } else if (user.relation === 'follower') {
-            relationLabel = 'Folgt mir';
+            relationLabel = 'Folgt mir (Geschützt)';
             badgeClass = 'block-status-badge follower';
         }
         
@@ -6915,7 +6916,7 @@ function renderBlockerCandidates() {
             ? `<img src="${avatarSrc}" alt="Avatar" class="block-avatar" onerror="this.src=''; this.className='avatar-placeholder'">`
             : `<div class="block-avatar avatar-placeholder"></div>`;
             
-        let isInteractive = user.status !== 'blocked' && user.relation !== 'blocked' && user.relation !== 'mutual' && !state.isBlockerProcessing;
+        let isInteractive = user.status !== 'blocked' && user.relation !== 'blocked' && user.relation !== 'mutual' && user.relation !== 'follower' && !state.isBlockerProcessing;
         const disabledAttr = isInteractive ? '' : 'disabled';
         
         const details = state.detailedProfilesMap.get(user.did);
@@ -6977,7 +6978,7 @@ function renderBlockerCandidates() {
 
 function updateBlockerStats() {
     const loaded = state.blockerCandidates.length;
-    const selected = state.blockerCandidates.filter(u => u.selected && u.status !== 'blocked' && u.relation !== 'blocked' && u.relation !== 'mutual').length;
+    const selected = state.blockerCandidates.filter(u => u.selected && u.status !== 'blocked' && u.relation !== 'blocked' && u.relation !== 'mutual' && u.relation !== 'follower').length;
     const success = state.blockerCandidates.filter(u => u.status === 'blocked').length;
     const error = state.blockerCandidates.filter(u => u.status === 'error').length;
     
@@ -6986,7 +6987,7 @@ function updateBlockerStats() {
     DOM.statBlockerSuccess.textContent = success;
     DOM.statBlockerError.textContent = error;
     
-    const hasSelectable = state.blockerCandidates.some(u => u.status !== 'blocked' && u.relation !== 'blocked' && u.relation !== 'mutual');
+    const hasSelectable = state.blockerCandidates.some(u => u.status !== 'blocked' && u.relation !== 'blocked' && u.relation !== 'mutual' && u.relation !== 'follower');
     DOM.btnBlockerSelectAll.disabled = !hasSelectable || state.isBlockerProcessing;
     DOM.btnBlockerDeselectAll.disabled = !hasSelectable || state.isBlockerProcessing;
     DOM.btnBlockerBlockSelected.disabled = selected === 0 || state.isBlockerProcessing;
@@ -7033,8 +7034,8 @@ async function processBlockerQueue() {
             const user = state.blockerCandidates.find(u => u.did === currentDid);
             if (!user) continue;
             
-            if (user.relation === 'mutual') {
-                log(`Massen-Block: Überspringe gegenseitiges Abonnement (Mutual): @${user.handle}`, 'warning');
+            if (user.relation === 'mutual' || user.relation === 'follower') {
+                log(`Massen-Block: Überspringe Follower/Mutual: @${user.handle}`, 'warning');
                 user.status = 'idle';
                 user.selected = false;
                 renderBlockerCandidates();

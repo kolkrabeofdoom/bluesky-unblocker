@@ -113,7 +113,7 @@ Dieses Modul ermöglicht gezielte Massenblockierungen und schützt gleichzeitig 
 - **Einzelblock**: Blockiere einzelne Konten direkt über deren Handle oder DID mit einer automatischen Sicherheitsprüfung.
 - **Follower-basiertes Blockieren**: Lade die Follower-Liste eines beliebigen Bluesky-Kontos als Kandidaten zur Massenblockierung.
 - **Liker-basiertes Blockieren**: Extrahiere alle Accounts, die einen bestimmten Beitrag (über die Post-URL) gelikt haben, um sie im Batch zu blockieren.
-- **Automatischer Schutz für Mutuals**: Gegenseitige Abonnements (Mutuals) werden automatisch als **"Mutual (Geschützt)"** markiert. Ihre Checkboxen sind gesperrt, sie werden von Massenauswahlen ("Alle markieren") ausgeschlossen und die Queue überspringt sie bei der Ausführung automatisch.
+- **Automatischer Schutz für Follower & Mutuals**: Eigene Follower und gegenseitige Abonnements (Mutuals) werden automatisch als **"Geschützt"** markiert (z.B. **"Mutual (Geschützt)"** oder **"Folgt mir (Geschützt)"**). Ihre Checkboxen sind gesperrt, sie werden von Massenauswahlen ("Alle markieren") ausgeschlossen und die Queue überspringt sie bei der Ausführung automatisch.
 - **Listen-Export**: Verpacke geladene Kandidaten direkt in eine neue oder bestehende Kurationsliste, um sie später zu verwalten.
 - **Undo-Integration**: Jede Massenblockierung wird im Aktionsverlauf registriert und kann mit einem Klick rückgängig gemacht werden.
 
@@ -122,10 +122,10 @@ Dieses Modul ermöglicht gezielte Massenblockierungen und schützt gleichzeitig 
 ```mermaid
 flowchart TD
     E1{{Kandidatenliste geladen}} --> F1(Aktion starten & Filter anwenden)
-    F1 --> F2(Mutuals automatisch ausschließen & schützen)
+    F1 --> F2(Follower & Mutuals automatisch ausschließen & schützen)
     F2 --> E2{{Blockier-Queue vorbereitet}}
     E2 --> F3(Queue-Worker abarbeiten)
-    F3 --> F4{{"Kandidat ist Mutual?"}}
+    F3 --> F4{{"Kandidat ist Follower/Mutual?"}}
     F4 -- Ja --> F5(Überspringen & loggen)
     F4 -- Nein --> F6(Blockierung ausführen - createRecord)
     F5 --> E3{{Kandidat verarbeitet}}
