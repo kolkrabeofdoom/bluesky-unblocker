@@ -26,6 +26,7 @@ const state = {
     myFollowersLoaded: false,
     targetFollowers: [],        // Loaded target followers: [{ did, handle, displayName, avatar, relation, status, selected }]
     targetCursor: '',           // Pagination cursor for target followers
+    targetSourceTargetDid: '',  // Resolved DID for target followers
     isFetchingFollowers: false,
     followQueue: [],            // Queue of DIDs to follow
     followRunTotal: 0,
@@ -2253,6 +2254,7 @@ async function fetchTargetFollowers(append = false) {
     if (!append) {
         state.targetFollowers = [];
         state.targetCursor = '';
+        state.targetSourceTargetDid = '';
         DOM.followerListGrid.innerHTML = '';
         DOM.btnLoadTarget.disabled = true;
         DOM.btnLoadTarget.querySelector('span').classList.add('hidden');
@@ -2316,11 +2318,22 @@ async function fetchTargetFollowers(append = false) {
         return;
     }
     
+    let cleanTarget = target;
+    if (cleanTarget.startsWith('@')) {
+        cleanTarget = cleanTarget.substring(1);
+    }
+    
     DOM.loadingFollowersCursorText.textContent = `Hole Seite...`;
-    log(`Hole Follower von @${target}...`, 'system');
+    log(`Hole Follower von @${cleanTarget}...`, 'system');
     
     try {
-        let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getFollowers?actor=${encodeURIComponent(target)}&limit=100`;
+        if (!state.targetSourceTargetDid) {
+            state.targetSourceTargetDid = state.session && state.session.did === 'did:plc:testuser123'
+                ? 'did:plc:targetfollower123'
+                : await resolveHandleOrDid(cleanTarget);
+        }
+        
+        let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getFollowers?actor=${encodeURIComponent(state.targetSourceTargetDid)}&limit=100`;
         if (state.targetCursor) {
             url += `&cursor=${encodeURIComponent(state.targetCursor)}`;
         }
@@ -6517,6 +6530,7 @@ async function fetchBlockerFollowers(append = false) {
         state.blockerCursor = '';
         state.blockerSource = 'followers';
         state.blockerSourceTarget = target;
+        state.blockerSourceTargetDid = '';
         DOM.blockerListGrid.innerHTML = '';
         DOM.btnBlockerFollowersLoad.disabled = true;
         DOM.btnBlockerFollowersLoad.querySelector('span').classList.add('hidden');
@@ -6580,9 +6594,20 @@ async function fetchBlockerFollowers(append = false) {
         return;
     }
     
-    log(`Hole Follower von @${target}...`, 'system');
+    let cleanTarget = target;
+    if (cleanTarget.startsWith('@')) {
+        cleanTarget = cleanTarget.substring(1);
+    }
+    
+    log(`Hole Follower von @${cleanTarget}...`, 'system');
     try {
-        let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getFollowers?actor=${encodeURIComponent(target)}&limit=100`;
+        if (!state.blockerSourceTargetDid) {
+            state.blockerSourceTargetDid = state.session && state.session.did === 'did:plc:testuser123'
+                ? 'did:plc:targetfollower123'
+                : await resolveHandleOrDid(cleanTarget);
+        }
+        
+        let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getFollowers?actor=${encodeURIComponent(state.blockerSourceTargetDid)}&limit=100`;
         if (state.blockerCursor) {
             url += `&cursor=${encodeURIComponent(state.blockerCursor)}`;
         }
