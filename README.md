@@ -220,7 +220,8 @@ Volle Kontrolle über deine Kurationslisten:
 - **Liste klonen**: Dupliziere eine Liste unter neuem Namen.
 - **Listen verschmelzen**: Kombiniere zwei Listen zu einer einzigen, inklusive automatischer Deduplizierung.
 - **Starter Pack erstellen**: Generiert vollautomatisch ein offizielles Bluesky-Starter-Pack direkt auf deinem Profil aus den Mitgliedern der ausgewählten Liste (erzeugt die dafür benötigte Referenzliste auf dem PDS und verlinkt sie).
-- **Listen-Backup & Wiederherstellung (Export/Import)**: Exportiere einzelne Listen als JSON oder CSV. Importiere Listen aus Backups (JSON, CSV, oder TXT mit Handles/DIDs) kontoübergreifend. Fehlende DIDs werden automatisch aufgelöst, und die Liste wird auf dem aktuellen Konto neu angelegt und mit den Mitgliedern befüllt.
+- **Listen-Backup & Wiederherstellung (Export/Import)**: Exportiere einzelne Listen als JSON oder CSV. Beim Importieren aus Backups (JSON, CSV, oder TXT mit Handles/DIDs) kontoübergreifend kannst du wählen, ob die Einträge **als neue Liste** (mit anpassbarem Namen) angelegt oder **in eine bestehende, eigene Liste integriert (mergt)** werden sollen.
+- **Intelligente Deduplizierung & Listen-Laden**: Beim Zusammenführen (Merge) werden Duplikate automatisch im Vorfeld herausgefiltert. CTHULHU lädt nun neben deinen eigenen Listen auch **stummgeschaltete (Mute-Lists)** und **blockierte Listen-Abonnements (Block-Lists)** anderer Creator (Erhöhung des Limits auf 100 Listen). Listen werden automatisch beim Login geladen und beim Logout sicher aus dem Speicher entfernt.
 
 ---
 
