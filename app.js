@@ -58,7 +58,16 @@ const state = {
     blockerQueue: [],
     blockerRunTotal: 0,
     isBlockerProcessing: false,
-    isBlockerPaused: false
+    isBlockerPaused: false,
+    
+    // Import/Restore state additions
+    usersToRestore: [],
+    restoreStats: {
+        success: 0,
+        error: 0,
+        total: 0,
+        successfullyBlocked: []
+    }
 };
 
 // UI Elements
@@ -122,6 +131,7 @@ const DOM = {
     btnRescan: document.getElementById('btn-rescan'),
     
     btnExportJson: document.getElementById('btn-export-json'),
+    btnExportCsv: document.getElementById('btn-export-csv'),
     btnImportJson: document.getElementById('btn-import-json'),
     inputImportFile: document.getElementById('input-import-file'),
     
@@ -629,6 +639,7 @@ function setActionButtonsDisabled(disabled) {
     DOM.chkFilterInactive.disabled = disabled;
     DOM.btnRescan.disabled = disabled;
     DOM.btnExportJson.disabled = disabled;
+    DOM.btnExportCsv.disabled = disabled;
     DOM.btnImportJson.disabled = disabled;
     DOM.btnExportList.disabled = disabled;
     DOM.btnImportList.disabled = disabled;
@@ -1448,30 +1459,59 @@ DOM.btnResume.addEventListener('click', () => {
     DOM.btnResume.classList.add('hidden');
     
     // Spawn workers again
-    processQueue();
+    if (state.activeWorker) {
+        state.activeWorker();
+    } else {
+        processQueue();
+    }
 });
 
 // Cancel/Abort Execution
 DOM.btnCancel.addEventListener('click', () => {
-    const confirmCancel = confirm('Möchtest du den gesamten Unblock-Vorgang abbrechen? Bereits aufgehobene Blocks werden nicht wiederhergestellt.');
+    const isRestore = (state.activeWorker === processRestoreQueue);
+    const confirmMsg = isRestore 
+        ? 'Möchtest du den Import-Vorgang abbrechen? Bereits blockierte Profile bleiben blockiert.'
+        : 'Möchtest du den gesamten Unblock-Vorgang abbrechen? Bereits aufgehobene Blocks werden nicht wiederhergestellt.';
+        
+    const confirmCancel = confirm(confirmMsg);
     if (!confirmCancel) return;
     
-    log('Unblock-Vorgang abgebrochen.', 'warning');
-    
-    // Cancel any active fetches
-    if (state.abortController) {
-        state.abortController.abort();
-    }
-    
-    // Reset queue and any active 'processing' items back to 'blocked'
-    state.queue = [];
-    state.blockedUsers.forEach(u => {
-        if (u.status === 'processing') {
-            u.status = 'blocked';
+    if (isRestore) {
+        log('Import-Vorgang abgebrochen.', 'warning');
+        if (state.abortController) {
+            state.abortController.abort();
         }
-    });
-    
-    finishUnblockingFlow();
+        state.queue = [];
+        state.isProcessing = false;
+        DOM.progressContainer.classList.add('hidden');
+        DOM.executionControls.classList.add('hidden');
+        setActionButtonsDisabled(false);
+        
+        // Log action in history
+        if (state.restoreStats.successfullyBlocked.length > 0) {
+            const targets = state.restoreStats.successfullyBlocked.map(u => ({
+                did: u.did,
+                handle: u.handle,
+                rkey: u.rkey
+            }));
+            const handlesStr = targets.map(t => '@' + t.handle).join(', ');
+            addActionToHistory('block', `Blockliste importiert (abgebrochen): Blockiert: ${handlesStr}`, targets);
+        }
+        
+        fetchAllBlocks();
+    } else {
+        log('Unblock-Vorgang abgebrochen.', 'warning');
+        if (state.abortController) {
+            state.abortController.abort();
+        }
+        state.queue = [];
+        state.blockedUsers.forEach(u => {
+            if (u.status === 'processing') {
+                u.status = 'blocked';
+            }
+        });
+        finishUnblockingFlow();
+    }
 });
 
 // Clear Logs Console
@@ -1510,6 +1550,38 @@ DOM.btnExportJson.addEventListener('click', () => {
     log(`Blockliste mit ${dataToExport.length} Konten erfolgreich exportiert.`, 'success');
 });
 
+// CSV Backup Export
+DOM.btnExportCsv.addEventListener('click', () => {
+    if (state.blockedUsers.length === 0) {
+        alert('Keine blockierten Konten zum Exportieren vorhanden.');
+        return;
+    }
+    
+    let csvContent = 'did,handle,displayName,indexedAt\n';
+    state.blockedUsers.forEach(u => {
+        const did = u.did || '';
+        const handle = u.handle || '';
+        const displayName = (u.displayName || '').replace(/"/g, '""');
+        const indexedAt = u.indexedAt || '';
+        csvContent += `"${did}","${handle}","${displayName}","${indexedAt}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const handle = state.session ? state.session.handle : 'bluesky';
+    const date = new Date().toISOString().split('T')[0];
+    
+    a.href = url;
+    a.download = `bluesky-blocklist-${handle}-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    log(`Blockliste mit ${state.blockedUsers.length} Konten erfolgreich als CSV exportiert.`, 'success');
+});
+
 // JSON Backup Import
 DOM.btnImportJson.addEventListener('click', () => {
     DOM.inputImportFile.click();
@@ -1522,30 +1594,163 @@ DOM.inputImportFile.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = async (evt) => {
         try {
-            const imported = JSON.parse(evt.target.result);
-            if (!Array.isArray(imported)) {
-                throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
+            const content = evt.target.result;
+            let validEntries = [];
+            
+            if (file.name.endsWith('.json')) {
+                const imported = JSON.parse(content);
+                if (!Array.isArray(imported)) {
+                    throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
+                }
+                validEntries = imported
+                    .filter(u => u && typeof u === 'object')
+                    .map(u => ({
+                        did: u.did || '',
+                        handle: u.handle || '',
+                        displayName: u.displayName || u.handle || ''
+                    }))
+                    .filter(u => u.did || u.handle);
+            } else if (file.name.endsWith('.csv')) {
+                const lines = content.split(/\r?\n/);
+                if (lines.length > 1) {
+                    const hasHeader = lines[0].toLowerCase().includes('did') || lines[0].toLowerCase().includes('handle');
+                    const startIdx = hasHeader ? 1 : 0;
+                    
+                    for (let i = startIdx; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const parts = [];
+                        let inQuotes = false;
+                        let current = '';
+                        for (let c = 0; c < line.length; c++) {
+                            const char = line[c];
+                            if (char === '"') {
+                                if (inQuotes && line[c + 1] === '"') {
+                                    current += '"';
+                                    c++;
+                                } else {
+                                    inQuotes = !inQuotes;
+                                }
+                            } else if ((char === ',' || char === ';') && !inQuotes) {
+                                parts.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        parts.push(current.trim());
+                        
+                        if (parts.length > 0) {
+                            let did = '';
+                            let handle = '';
+                            let displayName = '';
+                            
+                            for (const part of parts) {
+                                if (part.startsWith('did:')) {
+                                    did = part;
+                                } else if (part.includes('.') && !part.includes(' ') && !handle) {
+                                    handle = part.replace(/^@/, '');
+                                } else if (part && !displayName && part !== did && part !== handle) {
+                                    displayName = part;
+                                }
+                            }
+                            
+                            if (!did && !handle) {
+                                if (parts[0].startsWith('did:')) {
+                                    did = parts[0];
+                                    handle = parts[1] || '';
+                                } else {
+                                    handle = parts[0].replace(/^@/, '');
+                                    did = parts[1] && parts[1].startsWith('did:') ? parts[1] : '';
+                                }
+                            }
+                            
+                            if (did || handle) {
+                                validEntries.push({
+                                    did: did,
+                                    handle: handle || did,
+                                    displayName: displayName || handle || did
+                                });
+                            }
+                        }
+                    }
+                }
+            } else {
+                const lines = content.split(/\r?\n/);
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+                    
+                    let did = '';
+                    let handle = '';
+                    if (line.startsWith('did:')) {
+                        did = line;
+                    } else {
+                        handle = line.replace(/^@/, '');
+                    }
+                    
+                    validEntries.push({
+                        did: did,
+                        handle: handle || did,
+                        displayName: handle || did
+                    });
+                }
             }
             
-            // Validate entries
-            const validEntries = imported.filter(u => u && typeof u === 'object' && u.did);
             if (validEntries.length === 0) {
-                throw new Error('Keine gültigen Block-Einträge gefunden.');
+                throw new Error('Keine gültigen Block-Einträge im Backup gefunden.');
             }
             
             log(`Backup geladen: ${validEntries.length} Einträge gefunden.`, 'info');
             
-            // Check which ones are missing
+            let resolvedCount = 0;
+            let resolveFailedCount = 0;
+            const entriesToProcess = [];
+            const isMock = state.session && state.session.did === 'did:plc:testuser123';
+            
+            if (validEntries.some(e => !e.did)) {
+                log('Einige Einträge haben keine DID. Löse Handles auf...', 'system');
+                for (const entry of validEntries) {
+                    if (!entry.did && entry.handle) {
+                        if (isMock) {
+                            entry.did = 'did:plc:mock_' + Math.random().toString(36).substr(2, 8);
+                            resolvedCount++;
+                            entriesToProcess.push(entry);
+                        } else {
+                            try {
+                                const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(entry.handle)}`);
+                                entry.did = res.did;
+                                resolvedCount++;
+                                entriesToProcess.push(entry);
+                            } catch (err) {
+                                log(`Konnte Handle @${entry.handle} nicht auflösen: ${getErrorMessage(err)}`, 'warning');
+                                resolveFailedCount++;
+                            }
+                        }
+                    } else if (entry.did) {
+                        entriesToProcess.push(entry);
+                    }
+                }
+                log(`Handle-Auflösung abgeschlossen: ${resolvedCount} erfolgreich, ${resolveFailedCount} fehlgeschlagen.`, 'info');
+            } else {
+                entriesToProcess.push(...validEntries);
+            }
+            
+            if (entriesToProcess.length === 0) {
+                throw new Error('Keine gültigen Block-Einträge mit auflösbaren DIDs vorhanden.');
+            }
+            
             const currentDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
-            const missing = validEntries.filter(u => !currentDids.has(u.did));
+            const missing = entriesToProcess.filter(u => !currentDids.has(u.did));
             
             if (missing.length === 0) {
-                alert(`Alle ${validEntries.length} Konten aus dem Backup sind bereits blockiert! Keine Aktion erforderlich.`);
+                alert(`Alle ${entriesToProcess.length} Konten aus der Import-Datei sind bereits blockiert! Keine Aktion erforderlich.`);
                 log('Import-Abgleich abgeschlossen: Keine fehlenden Blocks gefunden.', 'info');
                 return;
             }
             
-            const confirmMsg = `Backup enthält ${validEntries.length} Konten. Davon fehlen ${missing.length} auf deinem Account.\n\nMöchtest du diese ${missing.length} Konten jetzt wieder blockieren (wiederherstellen)?`;
+            const confirmMsg = `Import enthält ${entriesToProcess.length} Konten. Davon fehlen ${missing.length} auf deinem aktuellen Account.\n\nMöchtest du diese ${missing.length} Konten jetzt blockieren?`;
             if (confirm(confirmMsg)) {
                 await startRestoringFlow(missing);
             }
@@ -1561,25 +1766,20 @@ DOM.inputImportFile.addEventListener('change', (e) => {
 });
 
 // Start the block restoring flow
-async function startRestoringFlow(usersToRestore) {
-    state.queue = usersToRestore.map(u => u.did);
-    state.runTotal = usersToRestore.length;
-    state.isProcessing = true;
-    state.isPaused = false;
-    
-    // UI state adjustments
-    setActionButtonsDisabled(true);
-    DOM.progressContainer.classList.remove('hidden');
-    DOM.executionControls.classList.remove('hidden');
-    DOM.btnPause.classList.remove('hidden');
-    DOM.btnResume.classList.add('hidden');
-    DOM.btnCancel.disabled = false;
-    
-    log(`Starte die Wiederherstellung von ${state.queue.length} Blocks...`, 'system');
-    updateStats();
-    
-    state.abortController = new AbortController();
-    
+// Update restore stats display and progress bar
+function updateRestoreStats() {
+    if (state.isProcessing) {
+        const processed = state.restoreStats.success + state.restoreStats.error;
+        const totalToProcess = state.restoreStats.total;
+        const percentage = totalToProcess > 0 ? (processed / totalToProcess) * 100 : 0;
+        
+        DOM.progressBar.style.width = `${percentage}%`;
+        DOM.progressText.textContent = `Blockiert: ${processed} / ${totalToProcess} (${Math.round(percentage)}%)`;
+    }
+}
+
+// Process the block restoration (import) queue
+async function processRestoreQueue() {
     const CONCURRENCY = 4;
     const THROTTLE_DELAY = 100;
     const workers = [];
@@ -1589,10 +1789,10 @@ async function startRestoringFlow(usersToRestore) {
             const currentDid = state.queue.shift();
             if (!currentDid) continue;
             
-            const user = usersToRestore.find(u => u.did === currentDid);
+            const user = state.usersToRestore.find(u => u.did === currentDid);
             if (!user) continue;
             
-            log(`Stelle Block für ${user.handle || currentDid} wieder her...`, 'info');
+            log(`Blocke ${user.handle || currentDid}...`, 'info');
             
             try {
                 await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY));
@@ -1602,30 +1802,40 @@ async function startRestoringFlow(usersToRestore) {
                     break;
                 }
                 
+                let newRkey = '';
                 if (state.isDryRun) {
-                    log(`[Dry-Run] Würde Block für ${user.handle || currentDid} wiederherstellen.`, 'success');
-                    continue;
+                    log(`[Dry-Run] Würde Block für ${user.handle || currentDid} erstellen.`, 'success');
+                } else {
+                    const resData = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            repo: state.session.did,
+                            collection: 'app.bsky.graph.block',
+                            record: {
+                                $type: 'app.bsky.graph.block',
+                                subject: currentDid,
+                                createdAt: new Date().toISOString()
+                            }
+                        })
+                    });
+                    if (resData && resData.uri) {
+                        newRkey = resData.uri.split('/').pop();
+                    }
+                    log(`Erfolgreich blockiert: ${user.handle || currentDid}`, 'success');
                 }
                 
-                await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        repo: state.session.did,
-                        collection: 'app.bsky.graph.block',
-                        record: {
-                            $type: 'app.bsky.graph.block',
-                            subject: currentDid,
-                            createdAt: new Date().toISOString()
-                        }
-                    })
+                state.restoreStats.success++;
+                state.restoreStats.successfullyBlocked.push({
+                    did: currentDid,
+                    handle: user.handle || currentDid,
+                    rkey: newRkey
                 });
-                
-                log(`Erfolgreich wiederhergestellt: ${user.handle || currentDid}`, 'success');
             } catch (err) {
-                log(`Fehler beim Wiederherstellen von ${user.handle || currentDid}: ${getErrorMessage(err)}`, 'error');
+                state.restoreStats.error++;
+                log(`Fehler beim Blockieren von ${user.handle || currentDid}: ${getErrorMessage(err)}`, 'error');
             }
             
-            updateStats();
+            updateRestoreStats();
         }
     };
     
@@ -1636,13 +1846,58 @@ async function startRestoringFlow(usersToRestore) {
     await Promise.all(workers);
     
     if (state.queue.length === 0 && state.isProcessing && !state.isPaused) {
-        log('Wiederherstellung abgeschlossen!', 'success');
+        log('Blockliste erfolgreich importiert!', 'success');
         state.isProcessing = false;
         DOM.progressContainer.classList.add('hidden');
         DOM.executionControls.classList.add('hidden');
         setActionButtonsDisabled(false);
+        
+        // Log action in history
+        if (state.restoreStats.successfullyBlocked.length > 0) {
+            const targets = state.restoreStats.successfullyBlocked.map(u => ({
+                did: u.did,
+                handle: u.handle,
+                rkey: u.rkey
+            }));
+            const handlesStr = targets.map(t => '@' + t.handle).join(', ');
+            addActionToHistory('block', `Blockliste importiert: Blockiert: ${handlesStr}`, targets);
+        }
+        
         await fetchAllBlocks();
     }
+}
+
+// Start the block restoring (import) flow
+async function startRestoringFlow(usersToRestore) {
+    state.usersToRestore = usersToRestore;
+    state.queue = usersToRestore.map(u => u.did);
+    state.runTotal = usersToRestore.length;
+    state.isProcessing = true;
+    state.isPaused = false;
+    state.activeWorker = processRestoreQueue;
+    
+    state.restoreStats = {
+        success: 0,
+        error: 0,
+        total: usersToRestore.length,
+        successfullyBlocked: []
+    };
+    
+    // UI state adjustments
+    setActionButtonsDisabled(true);
+    DOM.progressContainer.classList.remove('hidden');
+    DOM.executionControls.classList.remove('hidden');
+    DOM.btnPause.classList.remove('hidden');
+    DOM.btnResume.classList.add('hidden');
+    DOM.btnCancel.disabled = false;
+    
+    log(`Starte das Importieren von ${state.queue.length} Blocks...`, 'system');
+    updateRestoreStats();
+    
+    state.abortController = new AbortController();
+    
+    // Start processing restoring queue
+    processRestoreQueue();
 }
 
 // Rescan Blocklist Handlers
@@ -5689,10 +5944,12 @@ async function rollbackAction(actionId) {
                     });
                     state.myFollows.add(target.did);
                 } else if (action.type === 'block') {
-                    let rkey = null;
-                    const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.listRecords?repo=${state.session.did}&collection=app.bsky.graph.block&limit=50`);
-                    const record = (res.records || []).find(r => r.value.subject === target.did);
-                    if (record) rkey = record.uri.split('/').pop();
+                    let rkey = target.rkey;
+                    if (!rkey) {
+                        const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.listRecords?repo=${state.session.did}&collection=app.bsky.graph.block&limit=100`);
+                        const record = (res.records || []).find(r => r.value.subject === target.did);
+                        if (record) rkey = record.uri.split('/').pop();
+                    }
                     if (rkey) {
                         await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
                             method: 'POST',

@@ -77,6 +77,9 @@ Importiere deine Bluesky-Blockliste und verwalte sie effizient:
 
 - **Phantom-Eintrag-Erkennung**: Identifiziert Blockierungen, die in deinem lokalen AT-Protokoll-Repository existieren, aber nicht mehr in der API angezeigt werden (diese "Phantome" blockieren saubere Abläufe).
 - **Whitelist-Schutz**: Markiere Accounts als geschützt. Whiteliste DIDs werden niemals in Massen-Entblockungen einbezogen.
+- **Backup & Wiederherstellung (Multi-Format)**: Exportiere deine geladene Blockliste als JSON- oder CSV-Backup. Importiere Backups (JSON, CSV oder TXT mit einem Handle/DID pro Zeile) kontoübergreifend. Fehlende Blocks werden abgeglichen und können im Batch wiederhergestellt werden.
+- **Automatische Handle-Auflösung**: Beim Importieren von Handles ohne DIDs werden diese automatisch im Hintergrund aufgelöst.
+- **Import-Undo & Pause/Resume**: Der Importvorgang kann jederzeit pausiert und fortgesetzt werden. Nach erfolgreichem Import wird ein Verlaufs-Eintrag angelegt, mit dem sich alle blockierten Profile per Klick wieder entblocken lassen.
 - **Concurrency Worker**: 4 parallele Worker mit 100ms Drosselung zur Vermeidung von API-Rate-Limits.
 - **Pause & Fortsetzen**: Vorgänge können jederzeit pausiert und fortgesetzt werden.
 - **Dry-Run-Modus**: Simuliert Aktionen, ohne Daten auf dem PDS zu ändern.
