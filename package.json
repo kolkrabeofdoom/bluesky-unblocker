@@ -1,6 +1,6 @@
 {
   "name": "cthulhu",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Bluesky Unblocker application (C.T.H.U.L.H.U.)",
   "main": "server.js",
   "scripts": {
