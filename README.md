@@ -220,6 +220,7 @@ Volle Kontrolle über deine Kurationslisten:
 - **Liste klonen**: Dupliziere eine Liste unter neuem Namen.
 - **Listen verschmelzen**: Kombiniere zwei Listen zu einer einzigen, inklusive automatischer Deduplizierung.
 - **Starter Pack erstellen**: Generiert vollautomatisch ein offizielles Bluesky-Starter-Pack direkt auf deinem Profil aus den Mitgliedern der ausgewählten Liste (erzeugt die dafür benötigte Referenzliste auf dem PDS und verlinkt sie).
+- **Listen-Backup & Wiederherstellung (Export/Import)**: Exportiere einzelne Listen als JSON oder CSV. Importiere Listen aus Backups (JSON, CSV, oder TXT mit Handles/DIDs) kontoübergreifend. Fehlende DIDs werden automatisch aufgelöst, und die Liste wird auf dem aktuellen Konto neu angelegt und mit den Mitgliedern befüllt.
 
 ---
 

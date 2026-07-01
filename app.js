@@ -284,6 +284,10 @@ const DOM = {
     loadingLists: document.getElementById('loading-lists'),
     emptyLists: document.getElementById('empty-lists'),
     listsListGrid: document.getElementById('lists-list-grid'),
+    btnListsExportJson: document.getElementById('btn-lists-export-json'),
+    btnListsExportCsv: document.getElementById('btn-lists-export-csv'),
+    btnListsImportBackup: document.getElementById('btn-lists-import-backup'),
+    inputListsImportFile: document.getElementById('input-lists-import-file'),
 
     // Tab buttons
     tabBtnTimeline: document.getElementById('tab-btn-timeline'),
@@ -5221,6 +5225,12 @@ function initListsTab() {
     DOM.btnListsClone.addEventListener('click', cloneSelectedList);
     DOM.btnListsMerge.addEventListener('click', mergeSelectedLists);
     DOM.btnListsCreateStarterpack.addEventListener('click', createStarterpackFromSelectedList);
+    
+    // Backup & Restore for lists
+    DOM.btnListsExportJson.addEventListener('click', exportListJSON);
+    DOM.btnListsExportCsv.addEventListener('click', exportListCSV);
+    DOM.btnListsImportBackup.addEventListener('click', () => DOM.inputListsImportFile.click());
+    DOM.inputListsImportFile.addEventListener('change', handleListImport);
 }
 async function createStarterpackFromSelectedList() {
     const packName = DOM.inputStarterpackName.value.trim();
@@ -5571,6 +5581,296 @@ function renderListMembers() {
         
         DOM.listsListGrid.appendChild(card);
     });
+}
+
+function exportListJSON() {
+    const listUri = DOM.selectUserListsPrimary.value;
+    if (!listUri || state.selectedListMembers.length === 0) {
+        alert('Keine Mitglieder geladen oder keine Liste ausgewählt.');
+        return;
+    }
+    
+    const selectedList = state.userLists.find(l => l.uri === listUri);
+    const listName = selectedList ? selectedList.name : 'liste';
+    
+    const dataToExport = state.selectedListMembers.map(m => ({
+        did: m.did,
+        handle: m.handle,
+        displayName: m.displayName
+    }));
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    
+    a.href = url;
+    a.download = `bluesky-list-${listName}-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    log(`Liste "${listName}" mit ${dataToExport.length} Mitgliedern erfolgreich als JSON exportiert.`, 'success');
+}
+
+function exportListCSV() {
+    const listUri = DOM.selectUserListsPrimary.value;
+    if (!listUri || state.selectedListMembers.length === 0) {
+        alert('Keine Mitglieder geladen oder keine Liste ausgewählt.');
+        return;
+    }
+    
+    const selectedList = state.userLists.find(l => l.uri === listUri);
+    const listName = selectedList ? selectedList.name : 'liste';
+    
+    let csvContent = 'did,handle,displayName\n';
+    state.selectedListMembers.forEach(m => {
+        const did = m.did || '';
+        const handle = m.handle || '';
+        const displayName = (m.displayName || '').replace(/"/g, '""');
+        csvContent += `"${did}","${handle}","${displayName}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    
+    a.href = url;
+    a.download = `bluesky-list-${listName}-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    log(`Liste "${listName}" mit ${state.selectedListMembers.length} Mitgliedern erfolgreich als CSV exportiert.`, 'success');
+}
+
+async function handleListImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+        try {
+            const content = evt.target.result;
+            let validEntries = [];
+            
+            if (file.name.endsWith('.json')) {
+                const imported = JSON.parse(content);
+                if (!Array.isArray(imported)) {
+                    throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
+                }
+                validEntries = imported
+                    .filter(u => u && typeof u === 'object')
+                    .map(u => ({
+                        did: u.did || '',
+                        handle: u.handle || '',
+                        displayName: u.displayName || u.handle || ''
+                    }))
+                    .filter(u => u.did || u.handle);
+            } else if (file.name.endsWith('.csv')) {
+                const lines = content.split(/\r?\n/);
+                if (lines.length > 1) {
+                    const hasHeader = lines[0].toLowerCase().includes('did') || lines[0].toLowerCase().includes('handle');
+                    const startIdx = hasHeader ? 1 : 0;
+                    
+                    for (let i = startIdx; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const parts = [];
+                        let inQuotes = false;
+                        let current = '';
+                        for (let c = 0; c < line.length; c++) {
+                            const char = line[c];
+                            if (char === '"') {
+                                if (inQuotes && line[c + 1] === '"') {
+                                    current += '"';
+                                    c++;
+                                } else {
+                                    inQuotes = !inQuotes;
+                                }
+                            } else if ((char === ',' || char === ';') && !inQuotes) {
+                                parts.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        parts.push(current.trim());
+                        
+                        if (parts.length > 0) {
+                            let did = '';
+                            let handle = '';
+                            let displayName = '';
+                            
+                            for (const part of parts) {
+                                if (part.startsWith('did:')) {
+                                    did = part;
+                                } else if (part.includes('.') && !part.includes(' ') && !handle) {
+                                    handle = part.replace(/^@/, '');
+                                } else if (part && !displayName && part !== did && part !== handle) {
+                                    displayName = part;
+                                }
+                            }
+                            
+                            if (!did && !handle) {
+                                if (parts[0].startsWith('did:')) {
+                                    did = parts[0];
+                                    handle = parts[1] || '';
+                                } else {
+                                    handle = parts[0].replace(/^@/, '');
+                                    did = parts[1] && parts[1].startsWith('did:') ? parts[1] : '';
+                                }
+                            }
+                            
+                            if (did || handle) {
+                                validEntries.push({
+                                    did: did,
+                                    handle: handle || did,
+                                    displayName: displayName || handle || did
+                                });
+                            }
+                        }
+                    }
+                }
+            } else {
+                const lines = content.split(/\r?\n/);
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+                    
+                    let did = '';
+                    let handle = '';
+                    if (line.startsWith('did:')) {
+                        did = line;
+                    } else {
+                        handle = line.replace(/^@/, '');
+                    }
+                    
+                    validEntries.push({
+                        did: did,
+                        handle: handle || did,
+                        displayName: handle || did
+                    });
+                }
+            }
+            
+            if (validEntries.length === 0) {
+                throw new Error('Keine gültigen Accounts im Backup gefunden.');
+            }
+            
+            log(`Backup geladen: ${validEntries.length} Einträge gefunden.`, 'info');
+            
+            let resolvedCount = 0;
+            let resolveFailedCount = 0;
+            const entriesToProcess = [];
+            const isMock = state.session && state.session.did === 'did:plc:testuser123';
+            
+            if (validEntries.some(e => !e.did)) {
+                log('Einige Einträge haben keine DID. Löse Handles auf...', 'system');
+                for (const entry of validEntries) {
+                    if (!entry.did && entry.handle) {
+                        if (isMock) {
+                            entry.did = 'did:plc:mock_' + Math.random().toString(36).substr(2, 8);
+                            resolvedCount++;
+                            entriesToProcess.push(entry);
+                        } else {
+                            try {
+                                const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(entry.handle)}`);
+                                entry.did = res.did;
+                                resolvedCount++;
+                                entriesToProcess.push(entry);
+                            } catch (err) {
+                                log(`Konnte Handle @${entry.handle} nicht auflösen: ${getErrorMessage(err)}`, 'warning');
+                                resolveFailedCount++;
+                            }
+                        }
+                    } else if (entry.did) {
+                        entriesToProcess.push(entry);
+                    }
+                }
+                log(`Handle-Auflösung abgeschlossen: ${resolvedCount} erfolgreich, ${resolveFailedCount} fehlgeschlagen.`, 'info');
+            } else {
+                entriesToProcess.push(...validEntries);
+            }
+            
+            if (entriesToProcess.length === 0) {
+                throw new Error('Keine gültigen Einträge mit auflösbaren DIDs vorhanden.');
+            }
+            
+            // Ask for new list name
+            const defaultListName = file.name.split('.')[0].replace(/-/g, ' ');
+            const listName = prompt('Gib einen Namen für die neu zu erstellende Liste auf deinem Account ein:', defaultListName || 'Importierte Liste');
+            if (!listName) {
+                log('Import abgebrochen durch den Benutzer.', 'warning');
+                return;
+            }
+            
+            log(`Erstelle Liste "${listName}" mit ${entriesToProcess.length} Mitgliedern auf deinem Account...`, 'system');
+            
+            if (isMock) {
+                await new Promise(resolve => setTimeout(resolve, 800));
+                log(`[Mock] Liste "${listName}" erfolgreich mit ${entriesToProcess.length} Mitgliedern erstellt.`, 'success');
+                alert(`[Mock] Liste "${listName}" wurde erfolgreich mit ${entriesToProcess.length} Mitgliedern erstellt!`);
+                fetchMyLists();
+            } else {
+                const createListRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        repo: state.session.did,
+                        collection: 'app.bsky.graph.list',
+                        record: {
+                            $type: 'app.bsky.graph.list',
+                            name: listName,
+                            purpose: 'app.bsky.graph.defs#curatelist',
+                            description: 'Importiert mit C.T.H.U.L.H.U. aus Backup',
+                            createdAt: new Date().toISOString()
+                        }
+                    })
+                });
+                const newListUri = createListRes.uri;
+                log(`Neue Liste erstellt: ${newListUri}. Füge Mitglieder hinzu...`, 'info');
+                
+                let successCount = 0;
+                for (const item of entriesToProcess) {
+                    try {
+                        await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                repo: state.session.did,
+                                collection: 'app.bsky.graph.listitem',
+                                record: {
+                                    $type: 'app.bsky.graph.listitem',
+                                    subject: item.did,
+                                    list: newListUri,
+                                    createdAt: new Date().toISOString()
+                                }
+                            })
+                        });
+                        log(`Hinzugefügt zu Liste: @${item.handle || item.did}`, 'success');
+                        successCount++;
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (itemErr) {
+                        log(`Fehler beim Hinzufügen von @${item.handle || item.did}: ${getErrorMessage(itemErr)}`, 'error');
+                    }
+                }
+                
+                log(`Import erfolgreich beendet! ${successCount} von ${entriesToProcess.length} Konten der Liste hinzugefügt.`, 'success');
+                alert(`Liste "${listName}" wurde erfolgreich erstellt und mit ${successCount} Mitgliedern befüllt.`);
+                fetchMyLists();
+            }
+            
+        } catch (err) {
+            alert(`Fehler beim Importieren: ${err.message}`);
+            log(`Fehler beim Listen-Backup-Import: ${err.message}`, 'error');
+        } finally {
+            DOM.inputListsImportFile.value = '';
+        }
+    };
+    reader.readAsText(file);
 }
 
 async function cloneSelectedList() {

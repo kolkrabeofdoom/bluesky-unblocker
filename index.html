@@ -1001,6 +1001,29 @@
                                     <span>Starter Pack aus aktueller Liste erstellen</span>
                                 </button>
                             </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 20px; margin-bottom: 10px; letter-spacing: 0.5px;">Backup & Wiederherstellung</h4>
+                            <div class="backup-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button id="btn-lists-export-json" class="btn btn-small btn-secondary" style="flex: 1; min-width: 90px;" title="Aktuelle Liste als JSON-Backup herunterladen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                    <span>Export JSON</span>
+                                </button>
+                                <button id="btn-lists-export-csv" class="btn btn-small btn-secondary" style="flex: 1; min-width: 90px;" title="Aktuelle Liste als CSV-Backup herunterladen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                    <span>Export CSV</span>
+                                </button>
+                                <button id="btn-lists-import-backup" class="btn btn-small btn-secondary" style="flex: 1; min-width: 110px;" title="Liste aus Backup (JSON, CSV, TXT) auf diesem Account erstellen">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                    </svg>
+                                    <span>Import Backup</span>
+                                </button>
+                                <input type="file" id="input-lists-import-file" accept=".json,.csv,.txt" class="hidden">
+                            </div>
                         </div>
                     </div>
 
