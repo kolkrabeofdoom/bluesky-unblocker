@@ -7942,7 +7942,7 @@ async function addBlockerCandidatesToList(existingListUri = null, newListName = 
                     uri: mockListUri,
                     rkey: mockListUri.split('/').pop(),
                     name: newListName,
-                    purpose: 'app.bsky.graph.defs#curatelist',
+                    purpose: 'app.bsky.graph.defs#modlist',
                     description: 'Erstellt mit C.T.H.U.L.H.U.'
                 });
                 populateBlockerListsDropdown();
@@ -7959,7 +7959,7 @@ async function addBlockerCandidatesToList(existingListUri = null, newListName = 
                     record: {
                         $type: 'app.bsky.graph.list',
                         name: newListName,
-                        purpose: 'app.bsky.graph.defs#curatelist',
+                        purpose: 'app.bsky.graph.defs#modlist',
                         description: 'Erstellt mit C.T.H.U.L.H.U.',
                         createdAt: new Date().toISOString()
                     }

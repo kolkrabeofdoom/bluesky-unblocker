@@ -1218,8 +1218,16 @@
                         <span class="option-desc">Erstellt eine neue Liste mit einem Wunschnamen auf deinem Profil.</span>
                     </div>
                 </label>
-                <div id="import-new-name-container" class="form-group" style="margin-left: 28px; margin-top: 5px; margin-bottom: 15px;">
+                <div id="import-new-name-container" class="form-group" style="margin-left: 28px; margin-top: 5px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <input type="text" id="import-new-list-name" placeholder="Name der neuen Liste..." style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary);">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label for="import-new-list-purpose" style="font-size: 0.8rem; color: var(--text-muted);">Listen-Typ (Zweck)</label>
+                        <select id="import-new-list-purpose" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                            <option value="app.bsky.graph.defs#modlist" selected>Moderationsliste (Blockliste / Stummschaltungsliste)</option>
+                            <option value="app.bsky.graph.defs#curatelist">Kurationsliste (Starter Pack / Benutzerliste)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <label class="modal-option-label">
