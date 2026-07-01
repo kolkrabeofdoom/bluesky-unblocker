@@ -690,6 +690,15 @@ function logout() {
     if (DOM.btnLoadMoreTarget) DOM.btnLoadMoreTarget.classList.add('hidden');
     if (DOM.btnLoadAllTarget) DOM.btnLoadAllTarget.classList.add('hidden');
     
+    // Clear lists state
+    state.userLists = [];
+    state.selectedListMembers = [];
+    DOM.selectUserListsPrimary.innerHTML = '<option value="" disabled selected>Listen werden geladen...</option>';
+    DOM.selectUserListsSecondary.innerHTML = '<option value="" disabled selected>Wähle zweite Liste...</option>';
+    if (DOM.blockerListSelect) {
+        DOM.blockerListSelect.innerHTML = '<option value="" disabled selected>Wähle Liste...</option>';
+    }
+    
     // Switch to blocklist tab by default for next login
     switchTab('blocklist');
     
@@ -789,8 +798,13 @@ DOM.loginForm.addEventListener('submit', async (e) => {
         DOM.loginSection.classList.add('hidden');
         DOM.workspaceSection.classList.remove('hidden');
         
-        // Load Blocklist
+        // Load Blocklist & User Lists
         await fetchAllBlocks();
+        try {
+            await fetchMyLists();
+        } catch (listErr) {
+            log(`Konnte Listen nicht laden: ${getErrorMessage(listErr)}`, 'warning');
+        }
         
     } catch (err) {
         log(`Verbindungsfehler: ${getErrorMessage(err)}`, 'error');
@@ -5345,9 +5359,40 @@ async function fetchMyLists() {
                 { uri: 'at://did:plc:testuser123/app.bsky.graph.list/list2', rkey: 'list2', name: '🚫 Krypto-Bots blockieren' }
             ];
         } else {
-            const res = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.getLists?actor=${state.session.did}&limit=30`);
+            const res = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.getLists?actor=${state.session.did}&limit=100`);
             const lists = res.lists || [];
-            state.userLists = lists.map(l => ({
+            
+            // Fetch muted lists (subscriptions)
+            try {
+                const muteRes = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.getListMutes?limit=100`);
+                if (muteRes.lists) {
+                    lists.push(...muteRes.lists);
+                }
+            } catch (muteErr) {
+                log(`Konnte stummgeschaltete Listen-Abonnements nicht laden: ${getErrorMessage(muteErr)}`, 'warning');
+            }
+            
+            // Fetch blocked lists (subscriptions)
+            try {
+                const blockRes = await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.getListBlocks?limit=100`);
+                if (blockRes.lists) {
+                    lists.push(...blockRes.lists);
+                }
+            } catch (blockErr) {
+                log(`Konnte blockierte Listen-Abonnements nicht laden: ${getErrorMessage(blockErr)}`, 'warning');
+            }
+            
+            // Deduplicate lists by URI
+            const seenUris = new Set();
+            const uniqueLists = [];
+            for (const l of lists) {
+                if (!seenUris.has(l.uri)) {
+                    seenUris.add(l.uri);
+                    uniqueLists.push(l);
+                }
+            }
+            
+            state.userLists = uniqueLists.map(l => ({
                 uri: l.uri,
                 rkey: l.uri.split('/').pop(),
                 name: l.name,
