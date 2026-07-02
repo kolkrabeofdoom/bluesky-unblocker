@@ -213,12 +213,20 @@ Schütze deine Beiträge vor Spam und Krypto-Scams:
 
 ### 🗂️ Listen-Manager (List Manager)
 
-Volle Kontrolle über deine Kurationslisten:
+Volle Kontrolle über deine Kurations- und Moderationslisten:
 
-- Durchsuche all deine Moderations- und Kurationslisten.
-- Betrachte die Listenmitglieder im gleichen Grid-Design.
-- **Liste klonen**: Dupliziere eine Liste unter neuem Namen.
-- **Listen verschmelzen**: Kombiniere zwei Listen zu einer einzigen, inklusive automatischer Deduplizierung.
+- **Dropdown-Gruppierung (Optgroup)**: Saubere visuelle Trennung von eigenen/abonnierten Kurationslisten (Starter Packs) und Moderationslisten (Block- & Mute-Listen) im Dashboard.
+- **Vampirpflock-Schutz**: Vollautomatischer Schutz deiner Whitelist-Kontakte, Mutuals und gefolgten Profile direkt bei der Listenverwaltung.
+  - Geschützte Konten werden mit einem Schloss-Symbol (`🔒 Geschützt`) markiert.
+  - Sie werden bei Massenauswahlen automatisch übersprungen.
+  - Warndialoge verhindern das unbedachte Importieren oder Hinzufügen geschützter Konten in Moderationslisten (Block- & Mute-Listen).
+- **Grid-Massenaktionen (Bulk Actions)**: Führe Massen-Blockierungen, Massen-Muting oder Massen-Entfolgen direkt auf der Liste der ausgewählten Mitglieder aus. 
+  - Gesteuert über eine gedrosselte, parallele Warteschlange (Concurrency 4, 100ms Delay) zur Einhaltung von Bluesky-Rate-Limits.
+  - Volle Ablaufsteuerung mit Optionen zum **Pausieren, Fortsetzen und Abbrechen** der laufenden Massenaktion.
+- **Listenvergleich & Diff-Analyse**: Wähle eine primäre Liste und eine Vergleichsliste aus, um die DIDs abzugleichen. Neue oder entfernte Konten werden im Grid mit farbigen Badges (`Neu`, `Entfernt`) hervorgehoben.
+- **Externe URL- & Gist-Import**: Lade Text-, CSV- oder JSON-Daten direkt von einer externen URL (z. B. GitHub Gist oder Rohdaten-Dateien).
+- **Abonnement-Verwaltung (Mute/Block)**: Abonniere oder deabonniere fremde Listen als Stummschaltungs- oder Blockierliste direkt über die Eingabe von Profil-Links oder URIs.
+- **Liste klonen & verschmelzen**: Dupliziere eine Liste unter neuem Namen oder kombiniere zwei Listen zu einer einzigen, inklusive automatischer Deduplizierung.
 - **Starter Pack erstellen**: Generiert vollautomatisch ein offizielles Bluesky-Starter-Pack direkt auf deinem Profil aus den Mitgliedern der ausgewählten Liste (erzeugt die dafür benötigte Referenzliste auf dem PDS und verlinkt sie).
 - **Listen-Backup & Wiederherstellung (Export/Import)**: Exportiere einzelne Listen als JSON oder CSV. Beim Importieren aus Backups (JSON, CSV, oder TXT mit Handles/DIDs) kontoübergreifend kannst du wählen, ob die Einträge **als neue Liste** (mit anpassbarem Namen) angelegt oder **in eine bestehende, eigene Liste integriert (mergt)** werden sollen.
 - **Intelligente Deduplizierung & Listen-Laden**: Beim Zusammenführen (Merge) werden Duplikate automatisch im Vorfeld herausgefiltert. CTHULHU lädt nun neben deinen eigenen Listen auch **stummgeschaltete (Mute-Lists)** und **blockierte Listen-Abonnements (Block-Lists)** anderer Creator (Erhöhung des Limits auf 100 Listen). Listen werden automatisch beim Login geladen und beim Logout sicher aus dem Speicher entfernt.
