@@ -2351,3 +2351,52 @@ body { background: #04100c; }
 .modal-actions .btn {
     padding: 10px 20px;
 }
+
+/* List Manager Extended Features CSS */
+.block-item.diff-added {
+    border-color: rgba(94, 234, 212, 0.4) !important;
+    background: rgba(94, 234, 212, 0.03) !important;
+    box-shadow: 0 0 10px rgba(94, 234, 212, 0.05);
+}
+
+.block-item.diff-removed {
+    border-color: rgba(244, 63, 94, 0.4) !important;
+    border-style: dashed !important;
+    background: rgba(244, 63, 94, 0.02) !important;
+    opacity: 0.65;
+}
+
+.diff-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.diff-badge.added {
+    background: rgba(94, 234, 212, 0.15);
+    color: #5eead4;
+    border: 1px solid rgba(94, 234, 212, 0.3);
+}
+
+.diff-badge.removed {
+    background: rgba(244, 63, 94, 0.15);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.block-status-badge.protected {
+    background: rgba(163, 230, 53, 0.15);
+    color: #a3e635;
+    border-color: rgba(163, 230, 53, 0.3);
+    text-shadow: 0 0 8px rgba(163, 230, 53, 0.3);
+}
+
+.block-status-badge.subscribed {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.3);
+}
+

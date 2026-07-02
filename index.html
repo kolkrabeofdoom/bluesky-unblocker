@@ -1024,6 +1024,37 @@
                                 </button>
                                 <input type="file" id="input-lists-import-file" accept=".json,.csv,.txt" class="hidden">
                             </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 20px; margin-bottom: 10px; letter-spacing: 0.5px;">Listen-Vergleich (Diff)</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label for="select-user-lists-compare" style="font-size: 0.8rem;">Vergleiche primäre Liste mit:</label>
+                                    <select id="select-user-lists-compare" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                                        <option value="" disabled selected>Wähle Vergleichsliste...</option>
+                                    </select>
+                                </div>
+                                <button id="btn-lists-compare" class="btn btn-small btn-secondary" style="width: 100%;">
+                                    <span>Unterschiede anzeigen (Diff)</span>
+                                </button>
+                            </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 20px; margin-bottom: 10px; letter-spacing: 0.5px;">Externer URL-Import</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <input type="text" id="input-lists-import-url" placeholder="GitHub Gist / Rohdaten-URL..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <button id="btn-lists-import-url" class="btn btn-small btn-secondary" style="width: 100%;">
+                                    <span>Von URL laden</span>
+                                </button>
+                            </div>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 20px; margin-bottom: 10px; letter-spacing: 0.5px;">Abo-Verwaltung (Subscriptions)</h4>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <input type="text" id="input-lists-sub-uri" placeholder="Listen-URI (at://...) oder Web-Link..." style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 8px 12px;">
+                                <div style="display: flex; gap: 6px;">
+                                    <button id="btn-lists-sub-mute" class="btn btn-small btn-secondary" style="flex: 1;" title="Als Stummschaltungsliste abonnieren">Muten</button>
+                                    <button id="btn-lists-sub-block" class="btn btn-small btn-secondary" style="flex: 1;" title="Als Blockierliste abonnieren">Blocken</button>
+                                    <button id="btn-lists-unsub" class="btn btn-small btn-secondary" style="flex: 1;" title="Abonnement dieser Liste aufheben">Deabonnieren</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1032,6 +1063,43 @@
                         <div class="card-header-flex">
                             <h2 id="list-members-title">Mitglieder der Liste</h2>
                             <span class="badge" id="lists-visible-count-badge">0 geladen</span>
+                        </div>
+
+                        <!-- Selection & Batch Operations -->
+                        <div id="lists-batch-controls" class="filter-actions hidden" style="margin-top: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--card-border); padding-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
+                                <div class="selection-buttons">
+                                    <button id="btn-lists-select-all" class="btn btn-small btn-secondary" title="Alle angezeigten Mitglieder markieren">Alle</button>
+                                    <button id="btn-lists-deselect-all" class="btn btn-small btn-secondary" title="Auswahl aufheben">Aufheben</button>
+                                </div>
+                                <div id="lists-protection-warning" class="info-text-small hidden" style="color: #a3e635; margin: 0; display: flex; align-items: center; gap: 4px;">
+                                    <span>🔒 Einige Mitglieder sind geschützt (Mutuals/Whitelist)</span>
+                                </div>
+                            </div>
+                            <div class="action-buttons-group" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+                                <button id="btn-lists-batch-block" class="btn btn-small btn-danger-action" style="flex: 1; min-width: 150px;">
+                                    <span>🚫 Markierte blockieren</span>
+                                </button>
+                                <button id="btn-lists-batch-mute" class="btn btn-small btn-warning" style="flex: 1; min-width: 150px; background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+                                    <span>🔇 Markierte stummschalten</span>
+                                </button>
+                                <button id="btn-lists-batch-unfollow" class="btn btn-small btn-secondary" style="flex: 1; min-width: 150px;">
+                                    <span>🧹 Markierten entfolgen</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Mass Action Progress Bar -->
+                            <div class="progress-container hidden" id="lists-progress-container" style="margin-top: 15px; width: 100%;">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="lists-progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-text" id="lists-progress-text">Aktion wird ausgeführt...</div>
+                                <div class="execution-controls" id="lists-execution-controls" style="margin-top: 8px; display: flex; gap: 8px; justify-content: center;">
+                                    <button id="btn-lists-pause" class="btn btn-small btn-warning">Pause</button>
+                                    <button id="btn-lists-resume" class="btn btn-small btn-primary hidden">Fortsetzen</button>
+                                    <button id="btn-lists-cancel" class="btn btn-small btn-danger">Abbrechen</button>
+                                </div>
+                            </div>
                         </div>
                         <div id="loading-lists" class="loading-state hidden">
                             <span class="spinner-large"></span>

@@ -44,6 +44,10 @@ const state = {
     selectedPostReplies: [],     // [{ did, handle, displayName, avatar, relation, status, selected, replyText, isSpam }]
     userLists: [],               // [{ uri, rkey, name, purpose, description }]
     selectedListMembers: [],     // [{ did, handle, displayName, avatar, relation, status, selected, rkey }]
+    listsQueue: [],
+    listsRunTotal: 0,
+    isListsProcessing: false,
+    isListsPaused: false,
 
     // C.T.H.U.L.H.U. v1.3.0 Additions
     timelineActors: [],          // [{ did, handle, displayName, avatar, relation, status, selected, postsCount, repostCount, quoteCount }]
@@ -289,6 +293,31 @@ const DOM = {
     btnListsImportBackup: document.getElementById('btn-lists-import-backup'),
     inputListsImportFile: document.getElementById('input-lists-import-file'),
     listImportModal: document.getElementById('list-import-modal'),
+    
+    // New List Manager DOM bindings
+    selectUserListsCompare: document.getElementById('select-user-lists-compare'),
+    btnListsCompare: document.getElementById('btn-lists-compare'),
+    inputListsImportUrl: document.getElementById('input-lists-import-url'),
+    btnListsImportUrl: document.getElementById('btn-lists-import-url'),
+    inputListsSubUri: document.getElementById('input-lists-sub-uri'),
+    btnListsSubMute: document.getElementById('btn-lists-sub-mute'),
+    btnListsSubBlock: document.getElementById('btn-lists-sub-block'),
+    btnListsUnsub: document.getElementById('btn-lists-unsub'),
+    listsBatchControls: document.getElementById('lists-batch-controls'),
+    btnListsSelectAll: document.getElementById('btn-lists-select-all'),
+    btnListsDeselectAll: document.getElementById('btn-lists-deselect-all'),
+    listsProtectionWarning: document.getElementById('lists-protection-warning'),
+    btnListsBatchBlock: document.getElementById('btn-lists-batch-block'),
+    btnListsBatchMute: document.getElementById('btn-lists-batch-mute'),
+    btnListsBatchUnfollow: document.getElementById('btn-lists-batch-unfollow'),
+    listsProgressContainer: document.getElementById('lists-progress-container'),
+    listsProgressBar: document.getElementById('lists-progress-bar'),
+    listsProgressText: document.getElementById('lists-progress-text'),
+    listsExecutionControls: document.getElementById('lists-execution-controls'),
+    btnListsPause: document.getElementById('btn-lists-pause'),
+    btnListsResume: document.getElementById('btn-lists-resume'),
+    btnListsCancel: document.getElementById('btn-lists-cancel'),
+
     importModeNew: document.getElementById('import-mode-new'),
     importModeMerge: document.getElementById('import-mode-merge'),
     importNewNameContainer: document.getElementById('import-new-name-container'),
@@ -5271,6 +5300,45 @@ function initListsTab() {
     DOM.btnModalCancel.addEventListener('click', () => {
         DOM.listImportModal.classList.add('hidden');
     });
+
+    // Selection buttons
+    if (DOM.btnListsSelectAll) {
+        DOM.btnListsSelectAll.addEventListener('click', () => {
+            state.selectedListMembers.forEach(m => {
+                m.selected = !m.isProtected;
+            });
+            renderListMembers();
+            updateListsStats();
+        });
+    }
+    if (DOM.btnListsDeselectAll) {
+        DOM.btnListsDeselectAll.addEventListener('click', () => {
+            state.selectedListMembers.forEach(m => m.selected = false);
+            renderListMembers();
+            updateListsStats();
+        });
+    }
+
+    // Mass Action Buttons
+    if (DOM.btnListsBatchBlock) DOM.btnListsBatchBlock.addEventListener('click', () => startListBatch('block'));
+    if (DOM.btnListsBatchMute) DOM.btnListsBatchMute.addEventListener('click', () => startListBatch('mute'));
+    if (DOM.btnListsBatchUnfollow) DOM.btnListsBatchUnfollow.addEventListener('click', () => startListBatch('unfollow'));
+
+    // Batch Execution Controls
+    if (DOM.btnListsPause) DOM.btnListsPause.addEventListener('click', pauseListBatch);
+    if (DOM.btnListsResume) DOM.btnListsResume.addEventListener('click', resumeListBatch);
+    if (DOM.btnListsCancel) DOM.btnListsCancel.addEventListener('click', cancelListBatch);
+
+    // List Compare
+    if (DOM.btnListsCompare) DOM.btnListsCompare.addEventListener('click', compareSelectedLists);
+
+    // URL Import
+    if (DOM.btnListsImportUrl) DOM.btnListsImportUrl.addEventListener('click', importListFromUrl);
+
+    // Subscription buttons
+    if (DOM.btnListsSubMute) DOM.btnListsSubMute.addEventListener('click', () => handleSubscription('mute'));
+    if (DOM.btnListsSubBlock) DOM.btnListsSubBlock.addEventListener('click', () => handleSubscription('block'));
+    if (DOM.btnListsUnsub) DOM.btnListsUnsub.addEventListener('click', handleUnsubscribe);
 }
 async function createStarterpackFromSelectedList() {
     const packName = DOM.inputStarterpackName.value.trim();
@@ -5429,23 +5497,52 @@ async function fetchMyLists() {
         
         DOM.selectUserListsPrimary.innerHTML = '';
         DOM.selectUserListsSecondary.innerHTML = '<option value="" disabled selected>Wähle zweite Liste...</option>';
+        if (DOM.selectUserListsCompare) {
+            DOM.selectUserListsCompare.innerHTML = '<option value="" disabled selected>Wähle Vergleichsliste...</option>';
+        }
         
         if (state.userLists.length === 0) {
             DOM.selectUserListsPrimary.innerHTML = '<option value="" disabled>Keine Listen auf deinem Konto gefunden</option>';
             return;
         }
         
-        state.userLists.forEach(l => {
-            const opt1 = document.createElement('option');
-            opt1.value = l.uri;
-            opt1.textContent = l.name;
-            DOM.selectUserListsPrimary.appendChild(opt1);
+        const modLists = state.userLists.filter(l => l.purpose === 'app.bsky.graph.defs#modlist');
+        const curateLists = state.userLists.filter(l => l.purpose === 'app.bsky.graph.defs#curatelist');
+        
+        function appendGroupedOptions(dropdown, defaultOptionHtml) {
+            if (defaultOptionHtml) dropdown.innerHTML = defaultOptionHtml;
+            else dropdown.innerHTML = '';
             
-            const opt2 = document.createElement('option');
-            opt2.value = l.uri;
-            opt2.textContent = l.name;
-            DOM.selectUserListsSecondary.appendChild(opt2);
-        });
+            if (modLists.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = '🛡️ Moderationslisten (Block/Mute)';
+                modLists.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.uri;
+                    opt.textContent = l.name;
+                    group.appendChild(opt);
+                });
+                dropdown.appendChild(group);
+            }
+            
+            if (curateLists.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = '🗂️ Kurationslisten (Starter Packs)';
+                curateLists.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.uri;
+                    opt.textContent = l.name;
+                    group.appendChild(opt);
+                });
+                dropdown.appendChild(group);
+            }
+        }
+        
+        appendGroupedOptions(DOM.selectUserListsPrimary);
+        appendGroupedOptions(DOM.selectUserListsSecondary, '<option value="" disabled selected>Wähle zweite Liste...</option>');
+        if (DOM.selectUserListsCompare) {
+            appendGroupedOptions(DOM.selectUserListsCompare, '<option value="" disabled selected>Wähle Vergleichsliste...</option>');
+        }
         
         populateBlockerListsDropdown();
     } catch (err) {
@@ -5499,6 +5596,7 @@ async function fetchListMembers() {
                         followsCount: 10
                     });
                 }
+                const isProtected = state.whitelist.has(m.did) || m.relation === 'mutual' || m.relation === 'following';
                 return {
                     did: m.did,
                     handle: m.handle,
@@ -5507,6 +5605,7 @@ async function fetchListMembers() {
                     relation: m.relation,
                     status: 'idle',
                     selected: false,
+                    isProtected: isProtected,
                     rkey: m.rkey
                 };
             });
@@ -5546,6 +5645,8 @@ async function fetchListMembers() {
                     followsCount: p.followsCount || 0
                 });
                 
+                const isProtected = state.whitelist.has(p.did) || relation === 'mutual' || relation === 'following';
+                
                 return {
                     did: p.did,
                     handle: p.handle,
@@ -5554,6 +5655,7 @@ async function fetchListMembers() {
                     relation: relation,
                     status: 'idle',
                     selected: false,
+                    isProtected: isProtected,
                     rkey: item.uri.split('/').pop()
                 };
             });
@@ -5583,15 +5685,40 @@ function renderListMembers() {
     if (state.selectedListMembers.length === 0) {
         DOM.listsListGrid.classList.add('hidden');
         DOM.emptyLists.classList.remove('hidden');
+        if (DOM.listsBatchControls) DOM.listsBatchControls.classList.add('hidden');
         return;
     }
     
     DOM.emptyLists.classList.add('hidden');
     DOM.listsListGrid.classList.remove('hidden');
+    if (DOM.listsBatchControls) DOM.listsBatchControls.classList.remove('hidden');
+    
+    const hasProtected = state.selectedListMembers.some(m => m.isProtected);
+    if (DOM.listsProtectionWarning) {
+        if (hasProtected) {
+            DOM.listsProtectionWarning.classList.remove('hidden');
+        } else {
+            DOM.listsProtectionWarning.classList.add('hidden');
+        }
+    }
     
     state.selectedListMembers.forEach((user, index) => {
         const card = document.createElement('div');
-        card.className = `block-item fade-in`;
+        
+        let cardClass = 'block-item fade-in';
+        let protectedBadge = '';
+        
+        if (user.isProtected) {
+            cardClass += ' protected';
+            protectedBadge += ` <span class="block-status-badge protected">🔒 Geschützt</span>`;
+        }
+        if (user.diffStatus === 'added') {
+            cardClass += ' diff-added';
+            protectedBadge += ` <span class="diff-badge added">Neu</span>`;
+        } else if (user.diffStatus === 'removed') {
+            cardClass += ' diff-removed';
+            protectedBadge += ` <span class="diff-badge removed">Entfernt</span>`;
+        }
         
         let relationLabel = 'Keine';
         let badgeClass = 'block-status-badge none';
@@ -5609,6 +5736,18 @@ function renderListMembers() {
             badgeClass = 'block-status-badge follower';
         }
         
+        if (user.status === 'processing') {
+            cardClass += ' processing';
+            relationLabel = 'Verarbeite...';
+            badgeClass = 'block-status-badge processing';
+        } else if (user.status === 'error') {
+            cardClass += ' error';
+            relationLabel = 'Fehler';
+            badgeClass = 'block-status-badge error';
+        }
+        
+        card.className = cardClass;
+        
         const details = state.detailedProfilesMap.get(user.did) || {};
         const bioHtml = details.description ? `<div class="follower-bio" title="${details.description}">${details.description}</div>` : '';
         const statsHtml = `
@@ -5623,9 +5762,12 @@ function renderListMembers() {
             ? `<img src="${avatarSrc}" alt="Avatar" class="block-avatar" onerror="this.src=''; this.className='avatar-placeholder'">`
             : `<div class="block-avatar avatar-placeholder"></div>`;
             
+        const isCheckboxDisabled = state.isListsProcessing || user.status === 'processing';
+        const disabledAttr = isCheckboxDisabled ? 'disabled' : '';
+            
         card.innerHTML = `
             <label class="checkbox-container">
-                <input type="checkbox" ${user.selected ? 'checked' : ''} data-index="${index}">
+                <input type="checkbox" ${user.selected ? 'checked' : ''} ${disabledAttr} data-index="${index}">
                 <span class="checkmark"></span>
             </label>
             ${avatarEl}
@@ -5638,6 +5780,7 @@ function renderListMembers() {
                 ${statsHtml}
                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                     <span class="${badgeClass}">${relationLabel}</span>
+                    ${protectedBadge}
                 </div>
             </div>
         `;
@@ -5718,6 +5861,357 @@ function exportListCSV() {
     log(`Liste "${listName}" mit ${state.selectedListMembers.length} Mitgliedern erfolgreich als CSV exportiert.`, 'success');
 }
 
+function parseListContent(content, format) {
+    let validEntries = [];
+    if (format === 'json') {
+        const imported = JSON.parse(content);
+        if (!Array.isArray(imported)) {
+            throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
+        }
+        validEntries = imported
+            .filter(u => u && typeof u === 'object')
+            .map(u => ({
+                did: u.did || '',
+                handle: u.handle || '',
+                displayName: u.displayName || u.handle || ''
+            }))
+            .filter(u => u.did || u.handle);
+    } else if (format === 'csv') {
+        const lines = content.split(/\r?\n/);
+        if (lines.length > 1) {
+            const hasHeader = lines[0].toLowerCase().includes('did') || lines[0].toLowerCase().includes('handle');
+            const startIdx = hasHeader ? 1 : 0;
+            
+            for (let i = startIdx; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const parts = [];
+                let inQuotes = false;
+                let current = '';
+                for (let c = 0; c < line.length; c++) {
+                    const char = line[c];
+                    if (char === '"') {
+                        if (inQuotes && line[c + 1] === '"') {
+                            current += '"';
+                            c++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if ((char === ',' || char === ';') && !inQuotes) {
+                        parts.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                parts.push(current.trim());
+                
+                if (parts.length > 0) {
+                    let did = '';
+                    let handle = '';
+                    let displayName = '';
+                    
+                    for (const part of parts) {
+                        if (part.startsWith('did:')) {
+                            did = part;
+                        } else if (part.includes('.') && !part.includes(' ') && !handle) {
+                            handle = part.replace(/^@/, '');
+                        } else if (part && !displayName && part !== did && part !== handle) {
+                            displayName = part;
+                        }
+                    }
+                    
+                    if (!did && !handle) {
+                        if (parts[0].startsWith('did:')) {
+                            did = parts[0];
+                            handle = parts[1] || '';
+                        } else {
+                            handle = parts[0].replace(/^@/, '');
+                            did = parts[1] && parts[1].startsWith('did:') ? parts[1] : '';
+                        }
+                    }
+                    
+                    if (did || handle) {
+                        validEntries.push({
+                            did: did,
+                            handle: handle || did,
+                            displayName: displayName || handle || did
+                        });
+                    }
+                }
+            }
+        }
+    } else {
+        const lines = content.split(/\r?\n/);
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+            
+            let did = '';
+            let handle = '';
+            if (line.startsWith('did:')) {
+                did = line;
+            } else {
+                handle = line.replace(/^@/, '');
+            }
+            
+            validEntries.push({
+                did: did,
+                handle: handle || did,
+                displayName: handle || did
+            });
+        }
+    }
+    return validEntries;
+}
+
+async function executeImportFlow(validEntries, defaultListName) {
+    if (validEntries.length === 0) {
+        throw new Error('Keine gültigen Accounts im Backup gefunden.');
+    }
+    
+    let resolvedCount = 0;
+    let resolveFailedCount = 0;
+    const entriesToProcess = [];
+    const isMock = state.session && state.session.did === 'did:plc:testuser123';
+    
+    if (validEntries.some(e => !e.did)) {
+        log('Einige Einträge haben keine DID. Löse Handles auf...', 'system');
+        for (const entry of validEntries) {
+            if (!entry.did && entry.handle) {
+                if (isMock) {
+                    entry.did = 'did:plc:mock_' + Math.random().toString(36).substr(2, 8);
+                    resolvedCount++;
+                    entriesToProcess.push(entry);
+                } else {
+                    try {
+                        const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(entry.handle)}`);
+                        entry.did = res.did;
+                        resolvedCount++;
+                        entriesToProcess.push(entry);
+                    } catch (err) {
+                        log(`Konnte Handle @${entry.handle} nicht auflösen: ${getErrorMessage(err)}`, 'warning');
+                        resolveFailedCount++;
+                    }
+                }
+            } else if (entry.did) {
+                entriesToProcess.push(entry);
+            }
+        }
+        log(`Handle-Auflösung abgeschlossen: ${resolvedCount} erfolgreich, ${resolveFailedCount} fehlgeschlagen.`, 'info');
+    } else {
+        entriesToProcess.push(...validEntries);
+    }
+    
+    if (entriesToProcess.length === 0) {
+        throw new Error('Keine gültigen Einträge mit auflösbaren DIDs vorhanden.');
+    }
+    
+    // Check Vampirpflock protection for imported items
+    let protectedCount = 0;
+    const itemsToVerifyProtection = entriesToProcess.map(e => {
+        let relation = 'none';
+        if (state.myFollows.has(e.did) && state.myFollowers.has(e.did)) relation = 'mutual';
+        else if (state.myFollows.has(e.did)) relation = 'following';
+        else if (state.myFollowers.has(e.did)) relation = 'follower';
+        
+        const isProtected = state.whitelist.has(e.did) || relation === 'mutual' || relation === 'following';
+        if (isProtected) protectedCount++;
+        return { ...e, isProtected };
+    });
+
+    if (protectedCount > 0) {
+        log(`Vampirpflock-Schutz: ${protectedCount} geschützte Accounts in der Importliste entdeckt.`, 'warning');
+    }
+
+    // Populate Modal Options
+    DOM.importExistingListSelect.innerHTML = '';
+    const myOwnLists = state.userLists.filter(l => l.uri.includes(state.session.did));
+    if (myOwnLists.length === 0) {
+        DOM.importModeMerge.disabled = true;
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "Keine eigenen Listen vorhanden";
+        DOM.importExistingListSelect.appendChild(opt);
+        DOM.importModeNew.checked = true;
+        DOM.importNewNameContainer.classList.remove('hidden');
+        DOM.importExistingContainer.classList.add('hidden');
+    } else {
+        DOM.importModeMerge.disabled = false;
+        myOwnLists.forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.uri;
+            opt.textContent = l.name;
+            DOM.importExistingListSelect.appendChild(opt);
+        });
+    }
+    
+    DOM.importNewListName.value = defaultListName || 'Importierte Liste';
+    
+    // Show Modal and wait for confirm/cancel
+    const result = await new Promise((resolve) => {
+        const onConfirm = () => {
+            const mode = DOM.importModeNew.checked ? 'new' : 'merge';
+            if (mode === 'new') {
+                const newName = DOM.importNewListName.value.trim();
+                if (!newName) {
+                    alert('Bitte gib einen Namen für die neue Liste ein!');
+                    return;
+                }
+                cleanup();
+                resolve({ mode: 'new', name: newName });
+            } else {
+                const listUri = DOM.importExistingListSelect.value;
+                if (!listUri) {
+                    alert('Bitte wähle eine Liste aus!');
+                    return;
+                }
+                cleanup();
+                resolve({ mode: 'merge', uri: listUri });
+            }
+        };
+        
+        const onCancel = () => {
+            cleanup();
+            resolve(null);
+        };
+        
+        const cleanup = () => {
+            DOM.btnModalConfirm.removeEventListener('click', onConfirm);
+            DOM.btnModalCancel.removeEventListener('click', onCancel);
+            DOM.listImportModal.classList.add('hidden');
+        };
+        
+        DOM.btnModalConfirm.addEventListener('click', onConfirm);
+        DOM.btnModalCancel.addEventListener('click', onCancel);
+        DOM.listImportModal.classList.remove('hidden');
+    });
+    
+    if (!result) {
+        log('Import abgebrochen durch den Benutzer.', 'warning');
+        return;
+    }
+    
+    let listUri = '';
+    let listName = '';
+    let existingDids = new Set();
+    
+    const isModlistPurpose = DOM.importNewListPurpose.value === 'app.bsky.graph.defs#modlist';
+    let entriesToImport = [...itemsToVerifyProtection];
+    if (protectedCount > 0 && isModlistPurpose) {
+        if (!confirm(`Achtung: Die Liste enthält ${protectedCount} geschützte Profile. Möchtest du diese wirklich importieren (sie werden dann blockiert/stummgewählt)?`)) {
+            entriesToImport = itemsToVerifyProtection.filter(e => !e.isProtected);
+            log('Geschützte Profile aus Importliste entfernt.', 'info');
+        }
+    }
+    
+    if (result.mode === 'new') {
+        listName = result.name;
+        const purpose = DOM.importNewListPurpose.value;
+        log(`Erstelle neue Liste "${listName}" mit ${entriesToImport.length} Mitgliedern auf deinem Account...`, 'system');
+        
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            log(`[Mock] Liste "${listName}" erfolgreich erstellt.`, 'success');
+            alert(`[Mock] Liste "${listName}" wurde erfolgreich mit ${entriesToImport.length} Mitgliedern erstellt!`);
+            fetchMyLists();
+            return;
+        } else {
+            const createListRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    repo: state.session.did,
+                    collection: 'app.bsky.graph.list',
+                    record: {
+                        $type: 'app.bsky.graph.list',
+                        name: listName,
+                        purpose: purpose,
+                        description: 'Importiert mit C.T.H.U.L.H.U. aus Backup',
+                        createdAt: new Date().toISOString()
+                    }
+                })
+            });
+            listUri = createListRes.uri;
+            log(`Neue Liste erstellt: ${listUri}. Füge Mitglieder hinzu...`, 'info');
+        }
+    } else {
+        listUri = result.uri;
+        const foundList = state.userLists.find(l => l.uri === listUri);
+        listName = foundList ? foundList.name : 'Bestehende Liste';
+        const isList2Mod = foundList && foundList.purpose === 'app.bsky.graph.defs#modlist';
+        
+        if (protectedCount > 0 && isList2Mod) {
+            if (!confirm(`Achtung: Du importierst in eine bestehende Moderationsliste. Möchtest du die ${protectedCount} geschützten Profile wirklich hinzufügen?`)) {
+                entriesToImport = itemsToVerifyProtection.filter(e => !e.isProtected);
+                log('Geschützte Profile aus Importliste entfernt.', 'info');
+            }
+        }
+        
+        log(`Führe Backup-Import mit bestehender Liste "${listName}" zusammen...`, 'system');
+        
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            log(`[Mock] ${entriesToImport.length} Konten mit Liste "${listName}" zusammengeführt.`, 'success');
+            alert(`[Mock] ${entriesToImport.length} Konten wurden erfolgreich mit der Liste "${listName}" zusammengeführt!`);
+            return;
+        }
+        
+        log('Lese bestehende Mitglieder ein, um Duplikate zu vermeiden...', 'info');
+        try {
+            let cursor = '';
+            do {
+                let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getList?list=${encodeURIComponent(listUri)}&limit=100`;
+                if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+                const getRes = await apiFetch(url);
+                if (getRes.items) {
+                    getRes.items.forEach(it => existingDids.add(it.subject.did));
+                }
+                cursor = getRes.cursor;
+            } while (cursor);
+        } catch (getErr) {
+            log(`Konnte bestehende Mitglieder nicht laden: ${getErrorMessage(getErr)}. Führe Import fort.`, 'warning');
+        }
+    }
+    
+    const toAdd = entriesToImport.filter(e => !existingDids.has(e.did));
+    if (toAdd.length === 0) {
+        log('Alle Konten aus dem Backup sind bereits in dieser Liste vorhanden.', 'info');
+        alert('Alle Konten aus dem Backup sind bereits in dieser Liste vorhanden.');
+        return;
+    }
+    
+    log(`Füge ${toAdd.length} Konten zu "${listName}" hinzu...`, 'info');
+    
+    let successCount = 0;
+    for (const item of toAdd) {
+        try {
+            await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    repo: state.session.did,
+                    collection: 'app.bsky.graph.listitem',
+                    record: {
+                        $type: 'app.bsky.graph.listitem',
+                        subject: item.did,
+                        list: listUri,
+                        createdAt: new Date().toISOString()
+                    }
+                })
+            });
+            log(`Hinzugefügt zu Liste: @${item.handle || item.did}`, 'success');
+            successCount++;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (itemErr) {
+            log(`Fehler beim Hinzufügen von @${item.handle || item.did}: ${getErrorMessage(itemErr)}`, 'error');
+        }
+    }
+    
+    log(`Import erfolgreich beendet! ${successCount} von ${toAdd.length} Konten der Liste hinzugefügt.`, 'success');
+    alert(`${successCount} Konten wurden erfolgreich der Liste "${listName}" hinzugefügt.`);
+    fetchMyLists();
+}
+
 async function handleListImport(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -5726,320 +6220,15 @@ async function handleListImport(e) {
     reader.onload = async (evt) => {
         try {
             const content = evt.target.result;
-            let validEntries = [];
+            let format = 'txt';
+            if (file.name.endsWith('.json')) format = 'json';
+            else if (file.name.endsWith('.csv')) format = 'csv';
             
-            if (file.name.endsWith('.json')) {
-                const imported = JSON.parse(content);
-                if (!Array.isArray(imported)) {
-                    throw new Error('Ungültiges Dateiformat. Backup muss ein JSON-Array sein.');
-                }
-                validEntries = imported
-                    .filter(u => u && typeof u === 'object')
-                    .map(u => ({
-                        did: u.did || '',
-                        handle: u.handle || '',
-                        displayName: u.displayName || u.handle || ''
-                    }))
-                    .filter(u => u.did || u.handle);
-            } else if (file.name.endsWith('.csv')) {
-                const lines = content.split(/\r?\n/);
-                if (lines.length > 1) {
-                    const hasHeader = lines[0].toLowerCase().includes('did') || lines[0].toLowerCase().includes('handle');
-                    const startIdx = hasHeader ? 1 : 0;
-                    
-                    for (let i = startIdx; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        if (!line) continue;
-                        
-                        const parts = [];
-                        let inQuotes = false;
-                        let current = '';
-                        for (let c = 0; c < line.length; c++) {
-                            const char = line[c];
-                            if (char === '"') {
-                                if (inQuotes && line[c + 1] === '"') {
-                                    current += '"';
-                                    c++;
-                                } else {
-                                    inQuotes = !inQuotes;
-                                }
-                            } else if ((char === ',' || char === ';') && !inQuotes) {
-                                parts.push(current.trim());
-                                current = '';
-                            } else {
-                                current += char;
-                            }
-                        }
-                        parts.push(current.trim());
-                        
-                        if (parts.length > 0) {
-                            let did = '';
-                            let handle = '';
-                            let displayName = '';
-                            
-                            for (const part of parts) {
-                                if (part.startsWith('did:')) {
-                                    did = part;
-                                } else if (part.includes('.') && !part.includes(' ') && !handle) {
-                                    handle = part.replace(/^@/, '');
-                                } else if (part && !displayName && part !== did && part !== handle) {
-                                    displayName = part;
-                                }
-                            }
-                            
-                            if (!did && !handle) {
-                                if (parts[0].startsWith('did:')) {
-                                    did = parts[0];
-                                    handle = parts[1] || '';
-                                } else {
-                                    handle = parts[0].replace(/^@/, '');
-                                    did = parts[1] && parts[1].startsWith('did:') ? parts[1] : '';
-                                }
-                            }
-                            
-                            if (did || handle) {
-                                validEntries.push({
-                                    did: did,
-                                    handle: handle || did,
-                                    displayName: displayName || handle || did
-                                });
-                            }
-                        }
-                    }
-                }
-            } else {
-                const lines = content.split(/\r?\n/);
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) continue;
-                    
-                    let did = '';
-                    let handle = '';
-                    if (line.startsWith('did:')) {
-                        did = line;
-                    } else {
-                        handle = line.replace(/^@/, '');
-                    }
-                    
-                    validEntries.push({
-                        did: did,
-                        handle: handle || did,
-                        displayName: handle || did
-                    });
-                }
-            }
-            
-            if (validEntries.length === 0) {
-                throw new Error('Keine gültigen Accounts im Backup gefunden.');
-            }
-            
+            const validEntries = parseListContent(content, format);
             log(`Backup geladen: ${validEntries.length} Einträge gefunden.`, 'info');
             
-            let resolvedCount = 0;
-            let resolveFailedCount = 0;
-            const entriesToProcess = [];
-            const isMock = state.session && state.session.did === 'did:plc:testuser123';
-            
-            if (validEntries.some(e => !e.did)) {
-                log('Einige Einträge haben keine DID. Löse Handles auf...', 'system');
-                for (const entry of validEntries) {
-                    if (!entry.did && entry.handle) {
-                        if (isMock) {
-                            entry.did = 'did:plc:mock_' + Math.random().toString(36).substr(2, 8);
-                            resolvedCount++;
-                            entriesToProcess.push(entry);
-                        } else {
-                            try {
-                                const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(entry.handle)}`);
-                                entry.did = res.did;
-                                resolvedCount++;
-                                entriesToProcess.push(entry);
-                            } catch (err) {
-                                log(`Konnte Handle @${entry.handle} nicht auflösen: ${getErrorMessage(err)}`, 'warning');
-                                resolveFailedCount++;
-                            }
-                        }
-                    } else if (entry.did) {
-                        entriesToProcess.push(entry);
-                    }
-                }
-                log(`Handle-Auflösung abgeschlossen: ${resolvedCount} erfolgreich, ${resolveFailedCount} fehlgeschlagen.`, 'info');
-            } else {
-                entriesToProcess.push(...validEntries);
-            }
-            
-            if (entriesToProcess.length === 0) {
-                throw new Error('Keine gültigen Einträge mit auflösbaren DIDs vorhanden.');
-            }
-            
-            // Populate Modal Options
-            DOM.importExistingListSelect.innerHTML = '';
-            const myOwnLists = state.userLists.filter(l => l.uri.includes(state.session.did));
-            if (myOwnLists.length === 0) {
-                DOM.importModeMerge.disabled = true;
-                const opt = document.createElement('option');
-                opt.value = "";
-                opt.textContent = "Keine eigenen Listen vorhanden";
-                DOM.importExistingListSelect.appendChild(opt);
-                // Ensure 'new' is checked if 'merge' is disabled
-                DOM.importModeNew.checked = true;
-                DOM.importNewNameContainer.classList.remove('hidden');
-                DOM.importExistingContainer.classList.add('hidden');
-            } else {
-                DOM.importModeMerge.disabled = false;
-                myOwnLists.forEach(l => {
-                    const opt = document.createElement('option');
-                    opt.value = l.uri;
-                    opt.textContent = l.name;
-                    DOM.importExistingListSelect.appendChild(opt);
-                });
-            }
-            
             const defaultListName = file.name.split('.')[0].replace(/-/g, ' ');
-            DOM.importNewListName.value = defaultListName || 'Importierte Liste';
-            
-            // Show Modal and wait for confirm/cancel
-            const result = await new Promise((resolve) => {
-                const onConfirm = () => {
-                    const mode = DOM.importModeNew.checked ? 'new' : 'merge';
-                    if (mode === 'new') {
-                        const newName = DOM.importNewListName.value.trim();
-                        if (!newName) {
-                            alert('Bitte gib einen Namen für die neue Liste ein!');
-                            return;
-                        }
-                        cleanup();
-                        resolve({ mode: 'new', name: newName });
-                    } else {
-                        const listUri = DOM.importExistingListSelect.value;
-                        if (!listUri) {
-                            alert('Bitte wähle eine Liste aus!');
-                            return;
-                        }
-                        cleanup();
-                        resolve({ mode: 'merge', uri: listUri });
-                    }
-                };
-                
-                const onCancel = () => {
-                    cleanup();
-                    resolve(null);
-                };
-                
-                const cleanup = () => {
-                    DOM.btnModalConfirm.removeEventListener('click', onConfirm);
-                    DOM.btnModalCancel.removeEventListener('click', onCancel);
-                    DOM.listImportModal.classList.add('hidden');
-                };
-                
-                DOM.btnModalConfirm.addEventListener('click', onConfirm);
-                DOM.btnModalCancel.addEventListener('click', onCancel);
-                DOM.listImportModal.classList.remove('hidden');
-            });
-            
-            if (!result) {
-                log('Import abgebrochen durch den Benutzer.', 'warning');
-                return;
-            }
-            
-            let listUri = '';
-            let listName = '';
-            let existingDids = new Set();
-            
-            if (result.mode === 'new') {
-                listName = result.name;
-                log(`Erstelle neue Liste "${listName}" mit ${entriesToProcess.length} Mitgliedern auf deinem Account...`, 'system');
-                
-                if (isMock) {
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    log(`[Mock] Liste "${listName}" erfolgreich erstellt.`, 'success');
-                    alert(`[Mock] Liste "${listName}" wurde erfolgreich mit ${entriesToProcess.length} Mitgliedern erstellt!`);
-                    fetchMyLists();
-                    return;
-                } else {
-                    const createListRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            repo: state.session.did,
-                            collection: 'app.bsky.graph.list',
-                            record: {
-                                $type: 'app.bsky.graph.list',
-                                name: listName,
-                                purpose: 'app.bsky.graph.defs#curatelist',
-                                description: 'Importiert mit C.T.H.U.L.H.U. aus Backup',
-                                createdAt: new Date().toISOString()
-                            }
-                        })
-                    });
-                    listUri = createListRes.uri;
-                    log(`Neue Liste erstellt: ${listUri}. Füge Mitglieder hinzu...`, 'info');
-                }
-            } else {
-                listUri = result.uri;
-                const foundList = state.userLists.find(l => l.uri === listUri);
-                listName = foundList ? foundList.name : 'Bestehende Liste';
-                log(`Führe Backup-Import mit bestehender Liste "${listName}" zusammen...`, 'system');
-                
-                if (isMock) {
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    log(`[Mock] ${entriesToProcess.length} Konten mit Liste "${listName}" zusammengeführt.`, 'success');
-                    alert(`[Mock] ${entriesToProcess.length} Konten wurden erfolgreich mit der Liste "${listName}" zusammengeführt!`);
-                    return;
-                }
-                
-                log('Lese bestehende Mitglieder ein, um Duplikate zu vermeiden...', 'info');
-                try {
-                    let cursor = '';
-                    do {
-                        let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getList?list=${encodeURIComponent(listUri)}&limit=100`;
-                        if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
-                        const getRes = await apiFetch(url);
-                        if (getRes.items) {
-                            getRes.items.forEach(it => existingDids.add(it.subject.did));
-                        }
-                        cursor = getRes.cursor;
-                    } while (cursor);
-                } catch (getErr) {
-                    log(`Konnte bestehende Mitglieder nicht laden: ${getErrorMessage(getErr)}. Führe Import fort.`, 'warning');
-                }
-            }
-            
-            const toAdd = entriesToProcess.filter(e => !existingDids.has(e.did));
-            if (toAdd.length === 0) {
-                log('Alle Konten aus dem Backup sind bereits in dieser Liste vorhanden.', 'info');
-                alert('Alle Konten aus dem Backup sind bereits in dieser Liste vorhanden.');
-                return;
-            }
-            
-            log(`Füge ${toAdd.length} Konten zu "${listName}" hinzu...`, 'info');
-            
-            let successCount = 0;
-            for (const item of toAdd) {
-                try {
-                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            repo: state.session.did,
-                            collection: 'app.bsky.graph.listitem',
-                            record: {
-                                $type: 'app.bsky.graph.listitem',
-                                subject: item.did,
-                                list: listUri,
-                                createdAt: new Date().toISOString()
-                            }
-                        })
-                    });
-                    log(`Hinzugefügt zu Liste: @${item.handle || item.did}`, 'success');
-                    successCount++;
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                } catch (itemErr) {
-                    log(`Fehler beim Hinzufügen von @${item.handle || item.did}: ${getErrorMessage(itemErr)}`, 'error');
-                }
-            }
-            
-            log(`Import erfolgreich beendet! ${successCount} von ${toAdd.length} Konten der Liste hinzugefügt.`, 'success');
-            alert(`${successCount} Konten wurden erfolgreich der Liste "${listName}" hinzugefügt.`);
-            fetchMyLists();
+            await executeImportFlow(validEntries, defaultListName);
             
         } catch (err) {
             alert(`Fehler beim Importieren: ${err.message}`);
@@ -6241,6 +6430,498 @@ async function mergeSelectedLists() {
         alert(`Fehler: ${getErrorMessage(err)}`);
     } finally {
         DOM.btnListsMerge.disabled = false;
+    }
+}
+
+// --- NEW FUNCTIONS FOR C.T.H.U.L.H.U. LISTEN-MANAGER EXTENSIONS ---
+
+function startListBatch(type) {
+    if (state.isListsProcessing) return;
+
+    const selected = state.selectedListMembers.filter(m => m.selected);
+    if (selected.length === 0) {
+        alert('Bitte wähle zuerst mindestens ein Mitglied aus!');
+        return;
+    }
+
+    const containsProtected = selected.some(m => m.isProtected);
+    if (containsProtected && (type === 'block' || type === 'mute' || type === 'unfollow')) {
+        const confirmMsg = `Warnung: Die Auswahl enthält geschützte Accounts (Mutuals/Whitelist). Möchtest du sie trotzdem verarbeiten?`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+    }
+
+    state.listsQueue = selected.map(m => ({ did: m.did, handle: m.handle, displayName: m.displayName }));
+    state.listsRunTotal = selected.length;
+    state.isListsProcessing = true;
+    state.isListsPaused = false;
+    state.listsOperationType = type;
+
+    if (DOM.listsProgressContainer) DOM.listsProgressContainer.classList.remove('hidden');
+    if (DOM.btnListsPause) DOM.btnListsPause.classList.remove('hidden');
+    if (DOM.btnListsResume) DOM.btnListsResume.classList.add('hidden');
+    updateListsProgressUI(0, state.listsRunTotal, `Verarbeite 0 von ${state.listsRunTotal}...`);
+
+    log(`Starte Massenaktion (${type === 'block' ? 'Blockieren' : type === 'mute' ? 'Stummschalten' : 'Entfolgen'}) für ${state.listsRunTotal} Accounts...`, 'system');
+
+    processListsQueue();
+}
+
+function updateListsProgressUI(done, total, text) {
+    if (DOM.listsProgressBar) {
+        const pct = total > 0 ? (done / total) * 100 : 0;
+        DOM.listsProgressBar.style.width = `${pct}%`;
+    }
+    if (DOM.listsProgressText) {
+        DOM.listsProgressText.textContent = text;
+    }
+}
+
+function pauseListBatch() {
+    if (!state.isListsProcessing || state.isListsPaused) return;
+    state.isListsPaused = true;
+    if (DOM.btnListsPause) DOM.btnListsPause.classList.add('hidden');
+    if (DOM.btnListsResume) DOM.btnListsResume.classList.remove('hidden');
+    log('Massenaktion pausiert.', 'warning');
+}
+
+function resumeListBatch() {
+    if (!state.isListsProcessing || !state.isListsPaused) return;
+    state.isListsPaused = false;
+    if (DOM.btnListsPause) DOM.btnListsPause.classList.remove('hidden');
+    if (DOM.btnListsResume) DOM.btnListsResume.classList.add('hidden');
+    log('Massenaktion fortgesetzt.', 'system');
+    processListsQueue();
+}
+
+function cancelListBatch() {
+    if (!state.isListsProcessing) return;
+    state.isListsProcessing = false;
+    state.isListsPaused = false;
+    state.listsQueue = [];
+    if (DOM.listsProgressContainer) DOM.listsProgressContainer.classList.add('hidden');
+    log('Massenaktion abgebrochen.', 'error');
+    
+    updateListsStats();
+    renderListMembers();
+}
+
+async function processListsQueue() {
+    const CONCURRENCY = 4;
+    const THROTTLE_DELAY = 100;
+    const workers = [];
+
+    const isMock = state.session && state.session.did === 'did:plc:testuser123';
+
+    const worker = async () => {
+        while (state.listsQueue.length > 0 && state.isListsProcessing && !state.isListsPaused) {
+            const currentItem = state.listsQueue.shift();
+            if (!currentItem) continue;
+
+            const member = state.selectedListMembers.find(m => m.did === currentItem.did);
+            if (member) {
+                member.status = 'processing';
+                renderListMembers();
+            }
+
+            const doneCount = state.listsRunTotal - state.listsQueue.length;
+            updateListsProgressUI(doneCount, state.listsRunTotal, `Verarbeite ${doneCount} von ${state.listsRunTotal}...`);
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY));
+
+                if (!state.isListsProcessing || state.isListsPaused) {
+                    state.listsQueue.unshift(currentItem);
+                    if (member) {
+                        member.status = 'idle';
+                        renderListMembers();
+                    }
+                    break;
+                }
+
+                if (isMock) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    log(`[Mock] Massenaktion (${state.listsOperationType}) erfolgreich für @${currentItem.handle}`, 'success');
+                } else {
+                    if (state.listsOperationType === 'block') {
+                        await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                repo: state.session.did,
+                                collection: 'app.bsky.graph.block',
+                                record: {
+                                    $type: 'app.bsky.graph.block',
+                                    subject: currentItem.did,
+                                    createdAt: new Date().toISOString()
+                                }
+                            })
+                        });
+                        log(`Blockiert: @${currentItem.handle}`, 'success');
+                    } else if (state.listsOperationType === 'mute') {
+                        await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.muteActor`, {
+                            method: 'POST',
+                            body: JSON.stringify({ actor: currentItem.did })
+                        });
+                        log(`Stummgeschaltet: @${currentItem.handle}`, 'success');
+                    } else if (state.listsOperationType === 'unfollow') {
+                        let rkey = state.myFollowsRkeys.get(currentItem.did);
+                        if (!rkey) {
+                            const res = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.listRecords?repo=${state.session.did}&collection=app.bsky.graph.follow&limit=50`);
+                            const record = (res.records || []).find(r => r.value.subject === currentItem.did);
+                            if (record) rkey = record.uri.split('/').pop();
+                        }
+                        if (rkey) {
+                            await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    repo: state.session.did,
+                                    collection: 'app.bsky.graph.follow',
+                                    rkey: rkey
+                                })
+                            });
+                            state.myFollows.delete(currentItem.did);
+                            log(`Entfolgt: @${currentItem.handle}`, 'success');
+                        } else {
+                            log(`Konnte Follow-Eintrag für @${currentItem.handle} nicht finden.`, 'warning');
+                        }
+                    }
+                }
+
+                if (member) {
+                    if (state.listsOperationType === 'block') {
+                        member.relation = 'blocked';
+                    } else if (state.listsOperationType === 'unfollow') {
+                        if (member.relation === 'mutual') member.relation = 'follower';
+                        else if (member.relation === 'following') member.relation = 'none';
+                    }
+                    member.status = 'idle';
+                    member.selected = false;
+                }
+
+            } catch (err) {
+                log(`Fehler bei @${currentItem.handle}: ${getErrorMessage(err)}`, 'error');
+                if (member) {
+                    member.status = 'error';
+                }
+            }
+            renderListMembers();
+            updateListsStats();
+        }
+    };
+
+    for (let i = 0; i < CONCURRENCY; i++) {
+        workers.push(worker());
+    }
+
+    await Promise.all(workers);
+
+    if (state.listsQueue.length === 0 && state.isListsProcessing && !state.isListsPaused) {
+        state.isListsProcessing = false;
+        if (DOM.listsProgressContainer) DOM.listsProgressContainer.classList.add('hidden');
+        log(`Massenaktion erfolgreich beendet!`, 'success');
+        alert(`Massenaktion erfolgreich für alle ausgewählten Konten ausgeführt.`);
+        
+        if (state.listsOperationType === 'unfollow') {
+            fetchOwnRelationships();
+        }
+        
+        updateListsStats();
+        renderListMembers();
+    }
+}
+
+async function compareSelectedLists() {
+    const listUri1 = DOM.selectUserListsPrimary.value;
+    const listUri2 = DOM.selectUserListsCompare.value;
+
+    if (!listUri1 || !listUri2) {
+        alert('Bitte wähle eine primäre Liste und eine Vergleichsliste aus!');
+        return;
+    }
+    if (listUri1 === listUri2) {
+        alert('Bitte wähle zwei unterschiedliche Listen für den Vergleich aus!');
+        return;
+    }
+
+    DOM.btnListsCompare.disabled = true;
+    log('Lade Vergleichsliste für den Diff-Abgleich...', 'system');
+
+    try {
+        const isMock = state.session && state.session.did === 'did:plc:testuser123';
+        let compareItems = [];
+
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            if (listUri2.endsWith('list2')) {
+                compareItems = [
+                    { did: 'did:plc:regular3', handle: 'regular-troll.bsky.social', displayName: 'Regular Troll' },
+                    { did: 'did:plc:target3', handle: 'target-none.bsky.social', displayName: 'Target None (Bot)' }
+                ];
+            } else {
+                compareItems = [
+                    { did: 'did:plc:protected1', handle: 'protected-user.bsky.social', displayName: 'Protected Account 🛡️' }
+                ];
+            }
+        } else {
+            let cursor = '';
+            do {
+                let url = `${state.session.serverUrl}/xrpc/app.bsky.graph.getList?list=${encodeURIComponent(listUri2)}&limit=100`;
+                if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+                const res = await apiFetch(url);
+                if (res.items) {
+                    res.items.forEach(it => {
+                        compareItems.push({
+                            did: it.subject.did,
+                            handle: it.subject.handle,
+                            displayName: it.subject.displayName || it.subject.handle,
+                            avatar: it.subject.avatar || ''
+                        });
+                    });
+                }
+                cursor = res.cursor;
+            } while (cursor);
+        }
+
+        const primaryMap = new Map(state.selectedListMembers.map(m => [m.did, m]));
+        const compareDids = new Set(compareItems.map(m => m.did));
+
+        state.selectedListMembers.forEach(m => {
+            if (!compareDids.has(m.did)) {
+                m.diffStatus = 'removed';
+            } else {
+                m.diffStatus = 'common';
+            }
+        });
+
+        const blockedDids = new Set(state.blockedUsers.filter(u => u.status !== 'unblocked').map(u => u.did));
+        
+        compareItems.forEach(item => {
+            if (!primaryMap.has(item.did)) {
+                let relation = 'none';
+                if (blockedDids.has(item.did)) relation = 'blocked';
+                else if (state.myFollows.has(item.did) && state.myFollowers.has(item.did)) relation = 'mutual';
+                else if (state.myFollows.has(item.did)) relation = 'following';
+                else if (state.myFollowers.has(item.did)) relation = 'follower';
+
+                const isProtected = state.whitelist.has(item.did) || relation === 'mutual' || relation === 'following';
+
+                state.selectedListMembers.push({
+                    did: item.did,
+                    handle: item.handle,
+                    displayName: item.displayName,
+                    avatar: item.avatar || '',
+                    relation: relation,
+                    status: 'idle',
+                    selected: false,
+                    isProtected: isProtected,
+                    diffStatus: 'added',
+                    rkey: ''
+                });
+            }
+        });
+
+        log(`Vergleich abgeschlossen! Gefunden: ${state.selectedListMembers.filter(m => m.diffStatus === 'added').length} hinzugefügt, ${state.selectedListMembers.filter(m => m.diffStatus === 'removed').length} entfernt.`, 'success');
+        
+        renderListMembers();
+        updateListsStats();
+
+    } catch (err) {
+        log(`Fehler beim Vergleichen der Listen: ${getErrorMessage(err)}`, 'error');
+        alert(`Fehler: ${getErrorMessage(err)}`);
+    } finally {
+        DOM.btnListsCompare.disabled = false;
+    }
+}
+
+async function importListFromUrl() {
+    const url = DOM.inputListsImportUrl.value.trim();
+    if (!url) {
+        alert('Bitte gib eine gültige URL ein!');
+        return;
+    }
+
+    DOM.btnListsImportUrl.disabled = true;
+    log(`Lade Liste von URL: ${url}...`, 'system');
+
+    try {
+        const isMock = state.session && state.session.did === 'did:plc:testuser123';
+        let textContent = '';
+
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            textContent = `did:plc:target3\nregular-troll.bsky.social`;
+        } else {
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`HTTP-Fehler ${res.status}: ${res.statusText}`);
+            }
+            textContent = await res.text();
+        }
+
+        let format = 'txt';
+        if (url.endsWith('.json')) format = 'json';
+        else if (url.endsWith('.csv')) format = 'csv';
+        else if (textContent.trim().startsWith('[') || textContent.trim().startsWith('{')) format = 'json';
+
+        const validEntries = parseListContent(textContent, format);
+        log(`URL-Import geladen: ${validEntries.length} Einträge gefunden.`, 'info');
+
+        await executeImportFlow(validEntries, 'URL-Import');
+
+    } catch (err) {
+        log(`Fehler beim URL-Import: ${err.message}`, 'error');
+        alert(`Fehler: ${err.message}`);
+    } finally {
+        DOM.btnListsImportUrl.disabled = false;
+    }
+}
+
+async function handleSubscription(purpose) {
+    const rawUri = DOM.inputListsSubUri.value.trim();
+    if (!rawUri) {
+        alert('Bitte gib eine Listen-URI oder einen Link ein!');
+        return;
+    }
+
+    let listUri = rawUri;
+    if (rawUri.startsWith('https://')) {
+        const parts = rawUri.split('/profile/');
+        if (parts.length > 1) {
+            const subParts = parts[1].split('/lists/');
+            if (subParts.length > 1) {
+                const handle = subParts[0];
+                const rkey = subParts[1].split('?')[0];
+                log(`Auflösen der Listen-URL für handle: @${handle}, rkey: ${rkey}...`, 'system');
+                try {
+                    const isMock = state.session && state.session.did === 'did:plc:testuser123';
+                    let did = 'did:plc:mock_user';
+                    if (!isMock) {
+                        const resolveRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`);
+                        did = resolveRes.did;
+                    }
+                    listUri = `at://${did}/app.bsky.graph.list/${rkey}`;
+                } catch (resErr) {
+                    alert(`Konnte die URL nicht auflösen: ${getErrorMessage(resErr)}`);
+                    return;
+                }
+            }
+        }
+    }
+
+    const typeText = purpose === 'block' ? 'Blockier-Abonnement' : 'Stummschaltungs-Abonnement';
+    log(`Erstelle ${typeText} für Liste: ${listUri}...`, 'system');
+
+    try {
+        const isMock = state.session && state.session.did === 'did:plc:testuser123';
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            log(`[Mock] Liste ${listUri} erfolgreich als ${purpose} abonniert.`, 'success');
+            alert(`[Mock] Liste erfolgreich abonniert!`);
+        } else {
+            if (purpose === 'block') {
+                await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.createRecord`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        repo: state.session.did,
+                        collection: 'app.bsky.graph.listblock',
+                        record: {
+                            $type: 'app.bsky.graph.listblock',
+                            subject: listUri,
+                            createdAt: new Date().toISOString()
+                        }
+                    })
+                });
+            } else {
+                await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.muteActorList`, {
+                    method: 'POST',
+                    body: JSON.stringify({ list: listUri })
+                });
+            }
+            log(`Abonnement für Liste erfolgreich eingerichtet: ${listUri}`, 'success');
+            alert(`Liste erfolgreich als ${purpose === 'block' ? 'Blockierliste' : 'Stummschaltungsliste'} abonniert!`);
+        }
+        fetchMyLists();
+    } catch (err) {
+        log(`Fehler beim Abonnieren der Liste: ${getErrorMessage(err)}`, 'error');
+        alert(`Fehler: ${getErrorMessage(err)}`);
+    }
+}
+
+async function handleUnsubscribe() {
+    const rawUri = DOM.inputListsSubUri.value.trim();
+    if (!rawUri) {
+        alert('Bitte gib eine Listen-URI oder einen Link zum Deabonnieren ein!');
+        return;
+    }
+
+    let listUri = rawUri;
+    if (rawUri.startsWith('https://')) {
+        const parts = rawUri.split('/profile/');
+        if (parts.length > 1) {
+            const subParts = parts[1].split('/lists/');
+            if (subParts.length > 1) {
+                const handle = subParts[0];
+                const rkey = subParts[1].split('?')[0];
+                try {
+                    const isMock = state.session && state.session.did === 'did:plc:testuser123';
+                    let did = 'did:plc:mock_user';
+                    if (!isMock) {
+                        const resolveRes = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`);
+                        did = resolveRes.did;
+                    }
+                    listUri = `at://${did}/app.bsky.graph.list/${rkey}`;
+                } catch (resErr) {
+                    alert(`Konnte URL nicht auflösen: ${getErrorMessage(resErr)}`);
+                    return;
+                }
+            }
+        }
+    }
+
+    log(`Lösche Abonnement (Unmute / Unblock) für Liste: ${listUri}...`, 'system');
+
+    try {
+        const isMock = state.session && state.session.did === 'did:plc:testuser123';
+        if (isMock) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            log(`[Mock] Liste ${listUri} erfolgreich deabonniert.`, 'success');
+            alert(`[Mock] Liste erfolgreich deabonniert!`);
+        } else {
+            try {
+                await apiFetch(`${state.session.serverUrl}/xrpc/app.bsky.graph.unmuteActorList`, {
+                    method: 'POST',
+                    body: JSON.stringify({ list: listUri })
+                });
+                log(`Mute-Abonnement aufgehoben.`, 'success');
+            } catch (muteErr) {
+            }
+
+            try {
+                const listBlocks = await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.listRecords?repo=${state.session.did}&collection=app.bsky.graph.listblock&limit=100`);
+                const match = (listBlocks.records || []).find(r => r.value.subject === listUri);
+                if (match) {
+                    const rkey = match.uri.split('/').pop();
+                    await apiFetch(`${state.session.serverUrl}/xrpc/com.atproto.repo.deleteRecord`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            repo: state.session.did,
+                            collection: 'app.bsky.graph.listblock',
+                            rkey: rkey
+                        })
+                    });
+                    log(`Block-Abonnement aufgehoben.`, 'success');
+                }
+            } catch (blockErr) {
+            }
+            
+            log(`Abonnements für Liste gelöscht: ${listUri}`, 'success');
+            alert(`Abonnements für diese Liste wurden erfolgreich aufgehoben.`);
+        }
+        fetchMyLists();
+    } catch (err) {
+        log(`Fehler beim Deabonnieren: ${getErrorMessage(err)}`, 'error');
+        alert(`Fehler: ${getErrorMessage(err)}`);
     }
 }
 
